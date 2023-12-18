@@ -17,7 +17,7 @@ pids
 node_modules/
 jspm_packages/
 
-# Electron-Forge
+# vite
 out/
 
 #ffmpeg
@@ -30,3 +30,6 @@ temp/
 # Electron-builder
 dist/
 .vite/
+
+# package
+package/
