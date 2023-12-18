@@ -46,17 +46,37 @@ const Player = () => {
 
     },[video])
 
+    const createGain = useCallback(() => {
+
+        if(!video.current) throw new Error("Media not found");
+
+        if(appState.media.gainNode) return appState.media.gainNode;
+
+        const audioCtx = new AudioContext();
+        const source = audioCtx.createMediaElementSource(video.current);
+        const gainNode = audioCtx.createGain();
+
+        dispatchAppState({type:"gainNode", value:gainNode})
+
+        source.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        return gainNode;
+
+    },[appState.media.gainNode])
+
     const updateAmpLevel = useCallback((ampLevel:number) => {
 
         if(ampLevel > 1 || ampLevel < 0) return;
 
+        const gainNode = createGain();
+
         dispatchAppState({type:"ampLevel", value:ampLevel})
 
-        if(appState.media.gainNode){
-            appState.media.gainNode.gain.value = ampLevel * 10;
-        }
+        gainNode.gain.value = ampLevel * 10;
 
-    },[appState.media.gainNode])
+
+    },[createGain])
 
     const onFileDrop = (e:React.DragEvent) => {
 
@@ -112,7 +132,7 @@ const Player = () => {
 
         changeVideoSize();
 
-        dispatchAppState({type:"videoDuration", value:video.current?.duration})
+        dispatchAppState({type:"videoDuration", value:video.current?.duration ?? 0})
 
         dispatchAppState({type:"currentTime", value:video.current?.currentTime ?? 0})
 
@@ -138,21 +158,6 @@ const Player = () => {
         }
 
     },[video, appState.media.fitToWindow])
-
-    const createGain = useCallback(() => {
-
-        if(!video.current) return;
-
-        const audioCtx = new AudioContext();
-        const source = audioCtx.createMediaElementSource(video.current);
-        const gainNode = audioCtx.createGain();
-
-        dispatchAppState({type:"gainNode", value:gainNode})
-        updateAmpLevel(appState.media.ampLevel);
-        source.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-
-    },[video, appState.media.ampLevel, updateAmpLevel])
 
     const changeCurrentTime = useCallback((time:number) => {
 
@@ -283,9 +288,9 @@ const Player = () => {
 
     const toggleMute = useCallback(() => {
 
-        dispatchAppState({type:"mute", value:null})
+        dispatchAppState({type:"mute", value:!appState.media.mute})
 
-    },[])
+    },[appState.media.mute])
 
     const minimize = () => {
         window.api.send("minimize", {})
@@ -351,7 +356,7 @@ const Player = () => {
     },[viewport, appState.isFullScreen, hideControl])
 
     const toggleConvert = () => {
-        dispatchAppState({type:"converting", value:null})
+        dispatchAppState({type:"converting"})
     }
 
     const onChangeDisplayMode = useCallback((e:Mp.ConfigChangeEvent) => {
@@ -372,9 +377,7 @@ const Player = () => {
         dispatchAppState({type:"isMaximized", value:e.config.isMaximized})
 
         updateVolume(e.config.audio.volume);
-
-        dispatchAppState({type:"ampLevel", value:e.config.audio.ampLevel})
-        createGain();
+        updateAmpLevel(e.config.audio.ampLevel)
 
         dispatchAppState({type:"mute", value:e.config.audio.mute})
 
@@ -384,7 +387,7 @@ const Player = () => {
 
         initPlayer();
 
-    },[initPlayer, createGain, updateVolume])
+    },[updateVolume, updateAmpLevel, initPlayer])
 
     const load = useCallback((e:Mp.FileLoadEvent) => {
 
@@ -460,7 +463,7 @@ const Player = () => {
 
         return handleShortcut("Player", e);
 
-    },[appState.media.seekSpeed, appState.media.videoVolume, changeCurrentTime, exitFullscreen, playBackward, playFoward, showControl, toggleMute, togglePlay, updateVolume]);
+    },[appState.media.seekSpeed, appState.media.videoVolume, changeCurrentTime, toggleMute, exitFullscreen, playBackward, playFoward, showControl, togglePlay, updateVolume]);
 
     const onResize = useCallback(() => {
 

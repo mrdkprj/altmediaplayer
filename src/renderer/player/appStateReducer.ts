@@ -13,14 +13,14 @@ type AppState = {
 
 type AppAction =
 | { type: "loaded", value: boolean}
-| { type: "currentFile", value: Mp.MediaFile}
+| { type: "currentFile", value: Mp.MediaFile | null}
 | { type: "isMaximized", value: boolean}
 | { type: "isFullScreen", value: boolean}
 | { type: "playing", value: boolean}
-| { type: "converting", value: boolean}
+| { type: "converting"}
 | { type: "tooltipVisible", value: boolean}
 | { type: "currentTime", value: number}
-| { type: "mute"}
+| { type: "mute", value:boolean}
 | { type: "fitToWindow", value: boolean}
 | { type: "videoDuration", value: number}
 | { type: "videoVolume", value: number}
@@ -85,7 +85,7 @@ export const appStateReducer = (state: AppState, action: AppAction): AppState =>
             return {...state, media:{...state.media, currentTime:action.value}};
 
         case "mute":
-            return {...state, media:{...state.media, mute:!state.media.mute}};
+            return {...state, media:{...state.media, mute:action.value}};
 
         case "fitToWindow":
             return {...state, media:{...state.media, fitToWindow:action.value}};
