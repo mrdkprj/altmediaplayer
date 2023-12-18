@@ -3,7 +3,7 @@ import {build} from "electron-builder"
 build({
     config: {
         appId: "com.altmediaplayer.app",
-        productName: "ALT MediaPlayer",
+        productName: "altmediaplayer",
         extraResources:[
             "./resources/ffmpeg.exe",
             "./resources/ffprobe.exe"
@@ -15,15 +15,15 @@ build({
                     "x64",
                 ]
             },
-            icon: "/src/static/img/icon.ico",
+            icon: "/src/assets/icon.ico",
             fileAssociations: [
                 {
                     "ext": ["mp4","mov","avi","wmv","webm","flv"],
-                    "icon": "src/static/img/icon.ico",
+                    "icon": "src/assets/icon.ico",
                 },
                 {
                     "ext": "mp3",
-                    "icon": "src/static/img/icon_audio.ico",
+                    "icon": "src/assets/icon_audio.ico",
                 },
 
             ]
@@ -31,7 +31,7 @@ build({
         linux:{
             target: "deb",
             category: "AudioVideo",
-            icon: "./src/static/img/icon.icns",
+            icon: "./src/assets/icon.icns",
             fileAssociations: [
                 {
                     "ext": "mp4",

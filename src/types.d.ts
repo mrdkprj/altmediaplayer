@@ -70,13 +70,12 @@ declare global {
         removeAllListeners: <K extends keyof RendererChannelEventMap>(channel:K) => void;
     }
 
-    const PLAYER_WINDOW_WEBPACK_ENTRY: string;
-    const PLAYER_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
-    const PLAYLIST_WINDOW_WEBPACK_ENTRY: string;
-    const PLAYLIST_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
-    const CONVERT_WINDOW_WEBPACK_ENTRY: string;
-    const CONVERT_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
-    const TEST_WINDOW_WEBPACK_ENTRY: string;
+    const PLAYER_WINDOW_VITE_DEV_SERVER_URL: string;
+    const PLAYER_WINDOW_VITE_NAME: string;
+    const PLAYLIST_WINDOW_VITE_DEV_SERVER_URL: string;
+    const PLAYLIST_WINDOW_VITE_NAME: string;
+    const CONVERT_WINDOW_VITE_DEV_SERVER_URL: string;
+    const CONVERT_WINDOW_VITE_NAME: string;
 
     namespace Mp {
 
@@ -352,6 +351,7 @@ declare global {
             theme:string;
             light:string;
             dark:string;
+            lang:string;
             default:string;
             second:string;
             remove:string;
@@ -374,6 +374,16 @@ declare global {
             pause:string;
             previous:string;
             next:string;
+            inputFile:string;
+            convertFormat:string;
+            frameSize:string;
+            videoRotation:string;
+            audioBitrate:string;
+            volume:string;
+            maximizeVolue:string;
+            start:string;
+            cancel:string;
+            close:string;
         }
 
     }

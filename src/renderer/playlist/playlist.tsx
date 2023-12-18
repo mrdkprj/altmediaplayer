@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "../../translation/useTranslation";
 import { handleShortcut } from "../shortcut";
-import { initialAppState, reducer } from "./playlistStateReducer";
+import { initialAppState, reducer } from "./appStateReducer";
 import { List } from "./list";
 
 const List_Item_Padding = 10;
@@ -142,10 +142,20 @@ const Playlist = () => {
 
     const removeFromPlaylist = useCallback((data:Mp.RemovePlaylistItemResult) => {
 
+        const previousSelectedId = appState.selection.selectedId;
+        const shouldRestoreSelection = appState.selection.selectedIds.length == 1;
+
         clearSelection();
+
         dispatchAppState({type:"files", value:data.files})
 
-    },[clearSelection])
+        if(shouldRestoreSelection){
+            const selectedIndex = appState.files.findIndex(file => file.id == previousSelectedId)
+            const nextId = selectedIndex == appState.files.length - 1 ? appState.files[selectedIndex - 1].id : appState.files[selectedIndex + 1].id
+            dispatchAppState({type:"updateSelection", value:{selectedId:nextId, selectedIds:[nextId]}})
+        }
+
+    },[appState.files, appState.selection.selectedId, appState.selection.selectedIds.length, clearSelection])
 
     const startDragPlaylistItem = (e:React.DragEvent) => {
         if(!e.target || !(e.target instanceof HTMLElement)) return;

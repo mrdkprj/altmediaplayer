@@ -11,10 +11,23 @@ type AppState = {
     media:Mp.MediaState;
 }
 
-type AppAction = {
-    type: keyof AppState | keyof Mp.MediaState;
-    value: any;
-}
+type AppAction =
+| { type: "loaded", value: boolean}
+| { type: "currentFile", value: Mp.MediaFile}
+| { type: "isMaximized", value: boolean}
+| { type: "isFullScreen", value: boolean}
+| { type: "playing", value: boolean}
+| { type: "converting", value: boolean}
+| { type: "tooltipVisible", value: boolean}
+| { type: "currentTime", value: number}
+| { type: "mute"}
+| { type: "fitToWindow", value: boolean}
+| { type: "videoDuration", value: number}
+| { type: "videoVolume", value: number}
+| { type: "ampLevel", value: number}
+| { type: "gainNode", value: GainNode}
+| { type: "playbackSpeed", value: number}
+| { type: "seekSpeed", value: number}
 
 export const initialAppState : AppState = {
     loaded:false,

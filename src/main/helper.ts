@@ -1,6 +1,23 @@
 import { BrowserWindow, Menu, nativeImage } from "electron"
 import path from "path"
 import { translation } from "../translation/translation";
+import icon from "../assets/icon.ico"
+import play from "../assets/play.png"
+import pause from "../assets/pause.png"
+import forward from "../assets/forward.png"
+import backward from "../assets/backward.png"
+
+const isDev = process.env.NODE_ENV === "development"
+
+const load = (window:BrowserWindow, name:RendererName) => {
+
+    if(isDev){
+        return window.loadURL(`${process.env["ELECTRON_RENDERER_URL"]}/${name.toLowerCase()}/index.html`)
+    }
+
+    return window.loadFile(path.join(__dirname, `../renderer/${name.toLowerCase()}/index.html`))
+
+}
 
 export default class Helper{
 
@@ -21,17 +38,17 @@ export default class Helper{
             y:this.config.bounds.y,
             autoHideMenuBar: true,
             show: false,
-            icon: path.join(__dirname, "..", "static", "img", "icon.ico"),
+            icon: nativeImage.createFromDataURL(icon),
             frame: false,
             fullscreenable:true,
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
-                preload: PLAYER_WINDOW_PRELOAD_WEBPACK_ENTRY,
+                preload: path.join(__dirname, "../preload/preload.js"),
             },
         });
 
-        window.loadURL(PLAYER_WINDOW_WEBPACK_ENTRY);
+        load(window, "Player")
 
         return window
 
@@ -55,11 +72,11 @@ export default class Helper{
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
-                preload: PLAYLIST_WINDOW_PRELOAD_WEBPACK_ENTRY,
+                preload: path.join(__dirname, "../preload/preload.js"),
             },
         })
 
-        window.loadURL(PLAYLIST_WINDOW_WEBPACK_ENTRY);
+        load(window, "Playlist")
 
         return window;
     }
@@ -81,11 +98,11 @@ export default class Helper{
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
-                preload: CONVERT_WINDOW_PRELOAD_WEBPACK_ENTRY
+                preload: path.join(__dirname, "../preload/preload.js"),
             },
         })
 
-        window.loadURL(CONVERT_WINDOW_WEBPACK_ENTRY);
+        load(window, "Convert")
 
         return window;
     }
@@ -386,26 +403,24 @@ export default class Helper{
 
     createThumButtons(onclick: (button:Mp.ThumbButtonType) => void){
 
-        const staticDir = path.join(__dirname, "..", "static");
-
         const playThumbButton:Electron.ThumbarButton = {
             tooltip: this.t("play"),
-            icon: nativeImage.createFromPath(path.join(staticDir, "img", "play.png")),
+            icon: nativeImage.createFromDataURL(play),
             click: () => onclick("Play"),
         }
         const pauseThumbButton:Electron.ThumbarButton = {
             tooltip: this.t("pause"),
-            icon: nativeImage.createFromPath(path.join(staticDir, "img", "pause.png")),
+            icon: nativeImage.createFromDataURL(pause),
             click: () => onclick("Pause"),
         }
         const prevThumbButton:Electron.ThumbarButton = {
             tooltip: this.t("previous"),
-            icon: nativeImage.createFromPath(path.join(staticDir, "img", "backward.png")),
+            icon: nativeImage.createFromDataURL(backward),
             click: () => onclick("Previous")
         }
         const nextThumbButton:Electron.ThumbarButton = {
             tooltip: this.t("next"),
-            icon: nativeImage.createFromPath(path.join(staticDir, "img", "forward.png")),
+            icon: nativeImage.createFromDataURL(forward),
             click: () => onclick("Next")
         }
 

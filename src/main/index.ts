@@ -183,11 +183,11 @@ app.on("second-instance", (_event:Event, _argv:string[], _workingDirectory:strin
 })
 
 const getLanguage = ():Mp.Lang => {
-
+/*
     const langs = app.getPreferredSystemLanguages();
 
     if(langs[0].includes("ja")) return "ja"
-
+*/
     return "en"
 }
 
@@ -254,6 +254,7 @@ const onPlayerReady = () => {
     Renderers.Player?.on("show", () => {
         respond("Player", "ready", {config:config.data});
         respond("Playlist", "ready", {config:config.data});
+        respond("Convert", "ready", {config:config.data});
 
         togglePlay();
 
@@ -691,6 +692,8 @@ const saveCapture = async (data:Mp.CaptureEvent) => {
 const startConvert = async (data:Mp.ConvertRequest) => {
 
     if(!Renderers.Convert) return endConvert();
+
+    if(!data.sourcePath) return endConvert();
 
     const file = util.toFile(data.sourcePath);
 

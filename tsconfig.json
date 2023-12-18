@@ -1,21 +1,23 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "ESNext",
     "allowJs": true,
-    "module": "commonjs",
+    "module": "CommonJS",
+    "isolatedModules": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
     "esModuleInterop": true,
     "noImplicitAny": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "baseUrl": ".",
     "outDir": "dist",
-    "moduleResolution": "node",
+    "moduleResolution": "Node",
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "paths": {
       "*": ["node_modules/*"],
-    }
+    },
+    "types": ["electron-vite/node", "vite/client"]
   },
   "include": ["./src/**/*"]
 }

@@ -15,8 +15,10 @@ export default class Util{
         this.command = null;
         this.isDev = process.env.NODE_ENV === "development";
         const resourcePath = this.isDev ? path.join(__dirname, "..", "..", "resources") : path.join(process.resourcesPath, "resources")
+
         const ffmpegPath = path.join(resourcePath, "ffmpeg.exe")
         const ffprobePath = path.join(resourcePath, "ffprobe.exe")
+
         ffmpeg.setFfmpegPath(ffmpegPath)
         ffmpeg.setFfprobePath(ffprobePath)
     }
@@ -210,7 +212,16 @@ export default class Util{
         if(!bit_rate) throw new Error("No audio bitrate detected")
 
         const audioBitrate = options.audioBitrate !== "BitrateNone" ? options.audioBitrate : Math.ceil(parseInt(bit_rate)/1000)
-        const audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : ""
+        let audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : ""
+
+        if(options.maxAudioVolume){
+            const maxVolumeText = await this.getMaxVolume(sourcePath);
+            const maxVolume = parseFloat(maxVolumeText);
+            if(maxVolume >= 0){
+                throw new Error("No max_volume")
+            }
+            audioVolume = `volume=${maxVolume * -1}dB`
+        }
 
         return new Promise((resolve,reject)=>{
 

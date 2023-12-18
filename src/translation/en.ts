@@ -11,6 +11,7 @@ export const en:Mp.label = {
     theme:"Theme",
     light:"Light",
     dark:"Dark",
+    lang:"Language",
     default:"Default",
     second:"sec",
     remove:"Remove",
@@ -33,5 +34,14 @@ export const en:Mp.label = {
     pause:"Pause",
     previous:"Previous",
     next:"Next",
-
+    inputFile:"Input File",
+    convertFormat:"Format",
+    frameSize:"Size",
+    videoRotation:"Rotation",
+    audioBitrate:"Audio Bitrate",
+    maximizeVolue:"maximize",
+    volume:"Volume",
+    start:"Start",
+    cancel:"Cancel",
+    close:"Close",
 }

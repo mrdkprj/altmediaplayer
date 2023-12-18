@@ -3,6 +3,7 @@ import {appStateReducer, initialAppState} from "./appStateReducer";
 import { handleShortcut } from "../shortcut";
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { Footer } from "./footer";
+import icon from "../../assets/icon.ico"
 
 const Buttons = {
     left:0,
@@ -524,7 +525,7 @@ const Player = () => {
 
             <div className="title-bar">
                 <div className="icon-area">
-                    <img className="ico" src="../../static/img/icon.ico"/>
+                    <img className="ico" src={icon}/>
                     <span>{APP_NAME}</span>
                 </div>
                 <div className="title">{appState.currentFile.name}</div>

@@ -17,9 +17,6 @@ pids
 node_modules/
 jspm_packages/
 
-# Webpack
-.webpack/
-
 # Electron-Forge
 out/
 
@@ -32,3 +29,4 @@ temp/
 
 # Electron-builder
 dist/
+.vite/

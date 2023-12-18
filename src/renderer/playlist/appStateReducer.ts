@@ -40,52 +40,21 @@ export const initialAppState : AppState = {
     }
 }
 
-type AppAction = {
-    type: "playlingItemId";
-    value: string;
-} | {
-    type: "selectedId";
-    value: string;
-} | {
-    type: "setSelectedIds";
-    value: string[];
-} | {
-    type: "replaceSelectedIds";
-    value: {
-        id:string;
-        index:number;
-    }
-} | {
-    type: "appendSelectedIds";
-    value: string;
-} | {
-    type: "clearSelection";
-} | {
-    type: "updateSelection";
-    value:Mp.PlaylistItemSelection;
-} | {
-    type: "sortType";
-    value:Mp.SortType;
-} | {
-    type: "files";
-    value:Mp.MediaFile[];
-} | {
-    type: "startRename";
-    value:{
-        rect:RenamePartialRect;
-        value:string;
-    };
-} | {
-    type: "endRename";
-} | {
-    type: "preventBlur";
-    value: boolean;
-} | {
-    type: "toggleShuffle";
-} | {
-    type: "udpateName";
-    value:string;
-}
+type AppAction =
+| {type: "playlingItemId", value: string}
+| {type: "selectedId", value: string}
+| {type: "setSelectedIds", value: string[]}
+| {type: "replaceSelectedIds", value: {id:string,index:number}}
+| {type: "appendSelectedIds", value: string}
+| {type: "clearSelection"}
+| {type: "updateSelection", value:Mp.PlaylistItemSelection}
+| {type: "sortType", value:Mp.SortType}
+| {type: "files", value:Mp.MediaFile[]}
+| {type: "startRename", value:{rect:RenamePartialRect, value:string}}
+| {type: "endRename"}
+| {type: "preventBlur", value: boolean}
+| {type: "toggleShuffle"}
+| {type: "udpateName", value:string}
 
 export const reducer = (state: AppState, action: AppAction): AppState => {
 

@@ -3,14 +3,13 @@
   "productName": "altmediaplayer",
   "version": "1.0.0",
   "description": "MediaPlayer",
-  "main": ".webpack/main",
+  "main": "out/main/index.js",
   "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "build": "electron-forge package && ts-node build.ts"
+    "build": "electron-vite build && ts-node build.ts",
+    "start": "electron-vite dev --watch",
+    "preview": "electron-vite preview",
+    "prebuild": "electron-vite build"
   },
   "keywords": [],
   "author": {
@@ -24,24 +23,21 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.4",
-    "@electron-forge/plugin-webpack": "^6.0.4",
     "@types/fluent-ffmpeg": "^2.1.22",
     "@types/react": "^18.2.38",
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
-    "copy-webpack-plugin": "^11.0.0",
+    "@vitejs/plugin-react": "^4.2.1",
     "electron": "^25.1.0",
     "electron-builder": "^23.6.0",
+    "electron-vite": "^1.0.29",
     "eslint": "^8.0.1",
     "eslint-plugin-import": "^2.25.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "fork-ts-checker-webpack-plugin": "^7.2.13",
-    "node-loader": "^2.0.0",
-    "ts-loader": "^9.2.2",
     "ts-node": "^10.0.0",
-    "typescript": "~4.5.4"
+    "typescript": "~4.5.4",
+    "vite": "^5.0.10"
   }
 }
