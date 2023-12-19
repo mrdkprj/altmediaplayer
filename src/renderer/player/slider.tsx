@@ -32,7 +32,7 @@ const THUM_WIDTH = 8;
 export const Slider = (props:SliderProps) => {
 
     const [sliding, setSliding] = useState<boolean>(false);
-    const [value, setValue] = useState<number>(props.value);
+    //const [value, setValue] = useState<number>(props.value);
     const [rect, setRect] = useState<SliderRect>({top:0, left:0, bottom:0, width:0})
     const [toolTip, setTooltip] = useState<TooltipState>({visible:false, text:"", top:0, left:0})
     const slider = useRef<HTMLDivElement>(null);
@@ -74,7 +74,7 @@ export const Slider = (props:SliderProps) => {
         const progress = (e.nativeEvent.offsetX - offset) / rect.width;
 
         props.onSlide(progress)
-        setValue(progress);
+
     }
 
     const showTooltip = (e:React.MouseEvent) => {
@@ -99,15 +99,15 @@ export const Slider = (props:SliderProps) => {
 
     const getRate = () => {
         if(props.max){
-            return `${(value / props.max) * 100}%`;
+            return `${(props.value / props.max) * 100}%`;
         }
 
-        return `${Math.floor(value * 100)}%`;
+        return `${Math.floor(props.value * 100)}%`;
     }
 
     useEffect(() => {
 
-        setValue(props.value);
+        //setValue(props.value);
 
         if(slider.current){
             const {top, bottom, left, width} = slider.current.getBoundingClientRect()
@@ -120,7 +120,7 @@ export const Slider = (props:SliderProps) => {
             document.removeEventListener("mousemove", moveSlider)
             document.removeEventListener("mouseup", endSlide)
         }
-    },[endSlide, moveSlider, props.value])
+    },[endSlide, moveSlider])
 
     return (
         <>
@@ -128,14 +128,14 @@ export const Slider = (props:SliderProps) => {
                 <div className="tooltip" style={{left:toolTip.left, top:toolTip.top}}>{toolTip.text}</div>
             }
             {props.valuePosition === "left" &&
-                <div className={`track-value ${props.trackValueClass?.join(" ")}`}>{props.displayFormatter ? props.displayFormatter(value) : getRate()}</div>
+                <div className={`track-value ${props.trackValueClass?.join(" ")}`}>{props.displayFormatter ? props.displayFormatter(props.value) : getRate()}</div>
             }
             <div className={`slider ${props.sliderClass.join(" ")} ${sliding ? "sliding" : ""}`} ref={slider} onMouseDown={onTrackMousedown} onMouseEnter={showTooltip} onMouseMove={showTooltip} onMouseLeave={hideTooltip}>
                 <div className="track" style={{width:getRate()}}></div>
                 <div className={`thumb ${props.thumbType === "lever" ? "lever" : ""}`} style={{left:`max(${getRate()} - ${THUM_WIDTH}px, 0px)`}} onMouseDown={startSlide} title={props.onTooltip ? "" : getRate()}></div>
             </div>
             {props.valuePosition === "right"  &&
-                <div className={`track-value ${props.trackValueClass?.join(" ")}`}>{props.displayFormatter ? props.displayFormatter(value) : getRate()}</div>
+                <div className={`track-value ${props.trackValueClass?.join(" ")}`}>{props.displayFormatter ? props.displayFormatter(props.value) : getRate()}</div>
             }
         </>
     )
