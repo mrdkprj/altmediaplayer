@@ -1,3 +1,5 @@
+import { writable } from "svelte/store";
+
 type RenamePartialRect = {
     top:number;
     left:number;
@@ -56,25 +58,26 @@ type AppAction =
 | {type: "toggleShuffle"}
 | {type: "udpateName", value:string}
 
-export const reducer = (state: AppState, action: AppAction): AppState => {
+const updater = (state:AppState, action:AppAction) => {
 
     switch (action.type) {
         case "playlingItemId":
-            return {...state, playlingItemId:action.value};
+            return {...state, playlingItemId:action.value}
 
         case "selectedId":
-            return {...state, selection:{...state.selection, selectedId:action.value}};
+            return {...state, selection:{...state.selection, selectedId:action.value}}
 
         case "setSelectedIds":
-            return {...state, selection:{...state.selection, selectedIds:action.value}};
+            return {...state, selection:{...state.selection, selectedIds:action.value}}
 
         case "replaceSelectedIds": {
             const selectedIds = [...state.selection.selectedIds];
             selectedIds[action.value.index] = action.value.id;
             return {...state, selection:{...state.selection, selectedIds}};
         }
+
         case "clearSelection":
-            return {...state, selection:{...state.selection, selectedId:"", selectedIds:[]}};
+            return {...state, selection:{...state.selection, selectedId:"", selectedIds:[]}}
 
         case "updateSelection":{
             if(action.value.selectedId){
@@ -85,28 +88,37 @@ export const reducer = (state: AppState, action: AppAction): AppState => {
         }
 
         case "sortType":
-            return {...state, sortType:action.value};
+            return {...state, sortType:action.value}
 
         case "files":
-            return {...state, files:action.value};
+            return {...state, files:action.value}
 
         case "startRename":
-            return {...state, rename:{...state.rename, renaming:true, rect:action.value.rect, inputValue:action.value.value}};
+            return {...state, rename:{...state.rename, renaming:true, rect:action.value.rect, inputValue:action.value.value}}
 
         case "udpateName":
-            return {...state, rename:{...state.rename, inputValue:action.value}};
+            return {...state, rename:{...state.rename, inputValue:action.value}}
 
         case "endRename":
-            return {...state, rename:{...state.rename, renaming:false}};
+            return {...state, rename:{...state.rename, renaming:false}}
 
         case "preventBlur":
-            return {...state, preventBlur:action.value};
+            return {...state, preventBlur:action.value}
 
         case "toggleShuffle":
-            return {...state, shuffle:!state.shuffle};
-
+            return {...state, shuffle:!state.shuffle}
         default:
             return state;
     }
-};
+}
+
+export const reducer = (state:AppState) => {
+	const store = writable(state);
+
+	const dispatch = (action:AppAction) => {
+        store.update(state => updater(state, action));
+	}
+
+	return {appState:store , dispatch}
+}
 

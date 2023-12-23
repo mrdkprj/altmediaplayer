@@ -102,7 +102,7 @@ const playlistContextMenuCallback = (menu:Mp.PlaylistContextMenuType, args?:Mp.C
             clearPlaylist();
             break;
         case "Trash":
-            requestReleaseFile(playlistSelection.selectedIds);
+            beforeTrash(playlistSelection.selectedIds);
             break;
         case "CopyFileName":
             copyFileNameToClipboard(false);
@@ -265,8 +265,8 @@ const onPlayerReady = () => {
 
 const loadMediaFile = (autoPlay:boolean) => {
     const currentFile = getCurrentFile();
-    respond("Playlist", "after-file-load", {currentFile, autoPlay})
-    respond("Player", "after-file-load", {currentFile, autoPlay})
+    respond("Playlist", "load-file", {currentFile, autoPlay})
+    respond("Player", "load-file", {currentFile, autoPlay})
 }
 
 const initPlaylist = (fullPaths:string[]) => {
@@ -368,7 +368,7 @@ const saveConfig = (data:Mp.MediaState) => {
 
         config.save();
     }catch(ex){
-        return showErrorMessage(ex);
+        showErrorMessage(ex);
     }
 }
 
@@ -517,15 +517,15 @@ const getIndexAfterRemove = (removeIndices:number[]) => {
 
 }
 
-const requestReleaseFile = (selectedIds:string[]) => {
+const beforeTrash = (selectedIds:string[]) => {
 
     if(!selectedIds.length) return;
 
-    respond("Player", "release-file", {fileIds:selectedIds})
+    respond("Player", "before-trash", {fileIds:selectedIds})
 
 }
 
-const deleteFile = async (data:Mp.ReleaseFileRequest) => {
+const deleteFile = async (data:Mp.TrashRequest) => {
 
     if(!data.fileIds.length) return;
 
@@ -814,6 +814,10 @@ const fromPlaylistJson = (jsonData:string) => {
 
 }
 
+const beforeRename = async (data:Mp.RenameRequest) => {
+    respond("Player", "before-rename", data)
+}
+
 const renameFile = async (data:Mp.RenameRequest) => {
 
     const fileIndex = playlistFiles.findIndex(file => file.id == data.id)
@@ -835,7 +839,7 @@ const renameFile = async (data:Mp.RenameRequest) => {
         respond("Playlist", "after-rename", {file:newMediaFile})
 
         if(fileIndex == currentIndex){
-            respond("Player", "after-file-load", {currentFile:newMediaFile, autoPlay:mediaPlayStatus == "playing"})
+            respond("Player", "load-file", {currentFile:newMediaFile, autoPlay:mediaPlayStatus == "playing", startFrom:data.currentTime})
         }
 
     }catch(ex){
@@ -921,8 +925,9 @@ const registerIpcChannels = () => {
     addEventHandler("close-playlist", onClosePlaylist)
     addEventHandler("playlist-item-selection-change", onPlaylistItemSelectionChange)
     addEventHandler("open-sort-context", openSortContextMenu)
-    addEventHandler("file-released", deleteFile)
-    addEventHandler("rename-file", renameFile);
+    addEventHandler("trash-ready", deleteFile)
+    addEventHandler("rename-file", beforeRename);
+    addEventHandler("rename-ready", renameFile);
     addEventHandler("open-playlist-context", onOpenPlaylistContext)
     addEventHandler("change-playlist-order", changePlaylistItemOrder)
     addEventHandler("toggle-play", togglePlay)

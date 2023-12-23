@@ -22,7 +22,7 @@ declare global {
         "reload": Mp.Event;
         "save-capture": Mp.CaptureEvent;
         "close-playlist": Mp.Event;
-        "file-released": Mp.ReleaseFileRequest;
+        "trash-ready": Mp.TrashRequest;
         "open-playlist-context": Mp.Event;
         "change-playlist-order": Mp.ChangePlaylistOrderRequet;
         "toggle-play": Mp.Event;
@@ -33,6 +33,7 @@ declare global {
         "open-convert-sourcefile-dialog": Mp.OpenFileDialogRequest;
         "request-cancel-convert": Mp.Event;
         "rename-file": Mp.RenameRequest;
+        "rename-ready": Mp.RenameRequest;
         "playlist-item-selection-change": Mp.PlaylistItemSelectionChange;
         "open-sort-context": Mp.Position;
         "error": Mp.ErrorEvent;
@@ -40,13 +41,14 @@ declare global {
 
     type RendererChannelEventMap = {
         "ready": Mp.ReadyEvent;
-        "after-file-load": Mp.FileLoadEvent;
+        "load-file": Mp.FileLoadEvent;
         "toggle-play": Mp.Event;
         "toggle-fullscreen": Mp.Event;
         "change-display-mode": Mp.ConfigChangeEvent;
         "capture-media": Mp.Event;
         "restart": Mp.Event;
-        "release-file": Mp.ReleaseFileRequest;
+        "before-trash": Mp.TrashRequest;
+        "before-rename": Mp.RenameRequest;
         "log": Mp.Logging;
         "after-toggle-maximize": Mp.ConfigChangeEvent;
         "toggle-convert": Mp.Event;
@@ -249,6 +251,7 @@ declare global {
         type FileLoadEvent = {
             currentFile:MediaFile;
             autoPlay:boolean;
+            startFrom?:number;
         }
 
         type ReplaceFileRequest = {
@@ -286,7 +289,7 @@ declare global {
             files:Mp.MediaFile[]
         }
 
-        type ReleaseFileRequest = {
+        type TrashRequest = {
             fileIds:string[];
         }
 
@@ -296,7 +299,8 @@ declare global {
 
         type RenameRequest = {
             id:string;
-            name:string
+            name:string;
+            currentTime?:number;
         }
 
         type RenameResult = {
@@ -336,6 +340,10 @@ declare global {
 
         type Logging = {
             log:any;
+        }
+
+        type RadioGroupChangeEvent<T> = {
+            value:T;
         }
 
         type label = {

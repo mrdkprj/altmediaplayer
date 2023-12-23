@@ -1,3 +1,4 @@
+import { writable } from "svelte/store";
 import { EmptyFile } from "../../constants";
 
 type AppState = {
@@ -8,6 +9,8 @@ type AppState = {
     playing:boolean;
     converting:boolean;
     tooltipVisible:boolean;
+    autohide:boolean;
+    startFrom:number | undefined;
     media:Mp.MediaState;
 }
 
@@ -28,6 +31,8 @@ type AppAction =
 | { type: "gainNode", value: GainNode}
 | { type: "playbackSpeed", value: number}
 | { type: "seekSpeed", value: number}
+| { type: "startFrom", value:number | undefined}
+| { type: "autohide", value:boolean}
 
 export const initialAppState : AppState = {
     loaded:false,
@@ -37,6 +42,8 @@ export const initialAppState : AppState = {
     playing:false,
     converting:false,
     tooltipVisible:false,
+    startFrom:0,
+    autohide:false,
     media:{
         mute:false,
         fitToWindow:false,
@@ -50,9 +57,12 @@ export const initialAppState : AppState = {
     }
 }
 
-export const appStateReducer = (state: AppState, action: AppAction): AppState => {
+const updater = (state: AppState, action: AppAction): AppState => {
 
     switch (action.type) {
+
+        case "loaded":
+            return {...state, loaded:action.value}
 
         case "currentFile": {
             if(!action.value){
@@ -80,6 +90,12 @@ export const appStateReducer = (state: AppState, action: AppAction): AppState =>
 
         case "tooltipVisible":
             return {...state, converting:action.value};
+
+        case "startFrom":
+            return {...state, startFrom:action.value};
+
+        case "autohide":
+            return {...state, autohide:action.value};
 
         case "currentTime":
             return {...state, media:{...state.media, currentTime:action.value}};
@@ -113,3 +129,12 @@ export const appStateReducer = (state: AppState, action: AppAction): AppState =>
     }
 };
 
+export const reducer = (state:AppState) => {
+	const store = writable(state);
+
+	const dispatch = (action:AppAction) => {
+        store.update(state => updater(state, action));
+	}
+
+	return {appState:store , dispatch}
+}

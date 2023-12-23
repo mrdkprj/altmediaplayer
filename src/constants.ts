@@ -61,3 +61,5 @@ export const Buttons = {
     left:0,
     right:2,
 }
+
+export const handleKeyEvent = () => { console.log(1) }

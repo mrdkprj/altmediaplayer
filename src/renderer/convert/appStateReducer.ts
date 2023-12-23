@@ -1,3 +1,5 @@
+import { writable } from "svelte/store";
+
 type AppState = {
     audioVolume:string;
     maxVolume:boolean;
@@ -34,7 +36,7 @@ export const initialAppState : AppState = {
     sourceFileFormat:"MP4",
 }
 
-export const reducer = (state: AppState, action: AppAction): AppState => {
+export const updater = (state: AppState, action: AppAction): AppState => {
 
     switch (action.type) {
 
@@ -73,3 +75,12 @@ export const reducer = (state: AppState, action: AppAction): AppState => {
     }
 };
 
+export const reducer = (state:AppState) => {
+	const store = writable(state);
+
+	const dispatch = (action:AppAction) => {
+        store.update(state => updater(state, action));
+	}
+
+	return {appState:store , dispatch}
+}

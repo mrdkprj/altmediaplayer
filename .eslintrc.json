@@ -11,36 +11,35 @@
     "plugin:import/recommended",
     "plugin:import/electron",
     "plugin:import/typescript",
-    "plugin:react/recommended",
-    "plugin:@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended",
+    "plugin:svelte/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaFeatures": {
-        "jsx": true
-    },
     "ecmaVersion": "latest",
-    "sourceType": "module"
+    "sourceType": "module",
+    "extraFileExtensions": [".svelte"]
   },
   "plugins": [
-    "react",
-    "react-hooks",
     "@typescript-eslint"
   ],
+  "overrides": [
+		{
+			"files": ["*.svelte"],
+			"parser": "svelte-eslint-parser",
+			"parserOptions": {
+				"parser": "@typescript-eslint/parser"
+			}
+		}
+	],
   "rules": {
-    "react/react-in-jsx-scope": "off",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-var-requires": "off",
-    "react/jsx-filename-extension": [1, { "extensions": ["ts", ".jsx", "tsx"] }],
-    "react/display-name": "off",
-    "react/prop-types": 0,
-    "react/no-unknown-property": ["error", { "ignore": ["css"] }],
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "error",
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "no-empty-function": "off",
     "@typescript-eslint/no-empty-function": ["error", { "allow": ["asyncMethods"] }],
-    "no-cond-assign":"error"
+    "no-cond-assign":"error",
+    "@typescript-eslint/explicit-function-return-type": "off"
   }
 }

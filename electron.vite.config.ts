@@ -1,4 +1,5 @@
-import { defineConfig } from "electron-vite"
+import { defineConfig, externalizeDepsPlugin } from "electron-vite"
+import { svelte } from "@sveltejs/vite-plugin-svelte"
 
 export default defineConfig({
     main: {
@@ -6,14 +7,16 @@ export default defineConfig({
             rollupOptions:{
                 external:["fluent-ffmpeg"]
             }
-        }
+        },
+        plugins: [externalizeDepsPlugin()]
     },
     preload: {
         build:{
             lib:{
                 entry:"src/main/preload.ts"
             }
-        }
+        },
+        plugins: [externalizeDepsPlugin()]
     },
     renderer: {
         build:{
@@ -24,6 +27,7 @@ export default defineConfig({
                     convert_window:"src/renderer/convert/index.html"
                 }
             }
-        }
+        },
+        plugins: [svelte()]
     }
 })
