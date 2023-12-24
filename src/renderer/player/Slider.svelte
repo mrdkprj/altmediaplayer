@@ -46,8 +46,6 @@
 
         if(!sliding || e.clientX == startX) return;
 
-        if(!slider) return;
-
         const rect = slider.getBoundingClientRect();
         const progress = (e.clientX - rect.left) / rect.width
 
@@ -103,28 +101,24 @@
     }
 
     onMount(() => {
-
-        if(slider){
-            const {top, bottom, left, width} = slider.getBoundingClientRect()
-            rect = {top, bottom, left, width}
-        }
-        document.addEventListener("mousemove", moveSlider)
-        document.addEventListener("mouseup", endSlide)
-
-        return () => {
-            document.removeEventListener("mousemove", moveSlider)
-            document.removeEventListener("mouseup", endSlide)
-        }
+        const {top, bottom, left, width} = slider.getBoundingClientRect()
+        rect = {top, bottom, left, width}
     })
+
 </script>
+
+<svelte:document on:mousemove={moveSlider} on:mouseup={endSlide}/>
 
 {#if toolTip.visible}
     <div class="tooltip" style="left:{toolTip.left}px; top:{toolTip.top}px">{toolTip.text}</div>
 {/if}
+
 {#if valuePosition === "left"}
     <div class="track-value {trackValueClass?.join(" ")}">{displayFormatter ? displayFormatter(value) : getRate()}</div>
 {/if}
-<div class="slider {sliderClass.join(" ")} {sliding ? "sliding" : ""}"
+
+<div class="slider {sliderClass.join(" ")}"
+        class:sliding={sliding}
         bind:this={slider}
         on:mousedown={onTrackMousedown}
         on:mouseenter={showTooltip}
@@ -133,9 +127,10 @@
         role="button"
         tabindex="-1"
 >
-    <div class="track" style="width:{getRate()}"></div>
-    <div class="thumb {thumbType === "lever" ? "lever" : ""}" style="left:max({getRate()} - {THUM_WIDTH}px, 0px)" on:mousedown={startSlide} title={onTooltip ? "" : getRate()} role="button" tabindex="-1"></div>
+    <div class="track" style:width={getRate()}></div>
+    <div class="thumb" class:lever={thumbType === "lever"} style="left:max({getRate()} - {THUM_WIDTH}px, 0px)" on:mousedown={startSlide} title={onTooltip ? "" : getRate()} role="button" tabindex="-1"></div>
 </div>
+
 {#if valuePosition === "right"}
     <div class="track-value {trackValueClass?.join(" ")}">{displayFormatter ? displayFormatter(value) : getRate()}</div>
 {/if}

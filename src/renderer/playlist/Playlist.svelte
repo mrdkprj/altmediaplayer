@@ -1,10 +1,10 @@
 <script lang="ts">
 
     import { onMount } from "svelte";
+    import List from "./List.svelte";
     import { handleShortcut } from "../shortcut"
     import { handleKeyEvent } from "../../constants";
     import { reducer, initialAppState } from "./appStateReducer";
-    import List from "./List.svelte";
     import { useTranslation } from "../../translation/useTranslation"
 
     let fileListContainer:HTMLDivElement;
@@ -83,7 +83,6 @@
         if(dragState.dragging){
             endDragPlaylistItem(e)
         }
-
     }
 
     const onFileDrop = (e:DragEvent) => {
@@ -114,7 +113,7 @@
     const clearSelection = () => {
 
         dispatch({type:"clearSelection"})
-        window.api.send("playlist-item-selection-change", {selection:{selectedId:"", selectedIds:[]}})
+        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
 
     }
 
@@ -149,9 +148,8 @@
 
         dispatch({type:"files", value:data.files})
 
-        if(shouldRestoreSelection){
-            const nextId = selectedIndex == $appState.files.length - 1 ? $appState.files[selectedIndex - 1].id : $appState.files[selectedIndex + 1].id
-            console.log(selectedIndex)
+        if(shouldRestoreSelection && $appState.files.length){
+            const nextId = selectedIndex > $appState.files.length - 1 ? $appState.files[selectedIndex - 1].id : $appState.files[selectedIndex].id
             dispatch({type:"updateSelection", value:{selectedId:nextId, selectedIds:[nextId]}})
         }
 
@@ -230,12 +228,11 @@
         clearSelection();
 
         const id = typeof target === "string" ? target : target.id;
-        const selection:Mp.PlaylistItemSelection = {selectedId:id, selectedIds:[id]}
-        dispatch({type:"updateSelection", value:{selectedId:selection.selectedId, selectedIds:selection.selectedIds}})
+        dispatch({type:"updateSelection", value:{selectedId:id, selectedIds:[id]}})
 
         scrollToElement(document.getElementById(id))
 
-        window.api.send("playlist-item-selection-change", {selection})
+        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
 
     }
 
@@ -245,7 +242,7 @@
 
     const selectByShift = (target:HTMLElement) => {
 
-        dispatch({type:"updateSelection", value:{selectedId:"", selectedIds:[]}})
+        dispatch({type:"clearSelection"})
 
         const range = [];
 
@@ -264,10 +261,9 @@
             ids.push($appState.files[i].id)
         }
 
-        const selection:Mp.PlaylistItemSelection = {selectedId:$appState.selection.selectedId, selectedIds:ids}
-        dispatch({type:"updateSelection", value:{selectedId:"", selectedIds:selection.selectedIds}})
+        dispatch({type:"setSelectedIds", value:ids})
 
-        window.api.send("playlist-item-selection-change", {selection})
+        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
 
     }
 
@@ -280,22 +276,20 @@
 
         if(target.classList.contains("group")) return;
 
-        const selection:Mp.PlaylistItemSelection = {selectedId:$appState.selection.selectedId, selectedIds:[...$appState.selection.selectedIds, target.id]}
-        dispatch({type:"updateSelection", value:{selectedId:"", selectedIds:selection.selectedIds}})
+        dispatch({type:"updatSelectedIds", value:[target.id]})
 
-        window.api.send("playlist-item-selection-change", {selection})
+        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
     }
 
     const selectAll = () => {
 
         clearSelection();
 
-        const ids:string[] = $appState.files.map(file => file.id);
+        const ids = $appState.files.map(file => file.id);
 
-        const selection:Mp.PlaylistItemSelection = {selectedId:$appState.selection.selectedId, selectedIds:[...$appState.selection.selectedIds, ...ids]}
-        dispatch({type:"updateSelection", value:{selectedId:"", selectedIds:selection.selectedIds}})
+        dispatch({type:"updatSelectedIds", value:ids})
 
-        window.api.send("playlist-item-selection-change", {selection})
+        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
 
     }
 
@@ -322,15 +316,13 @@
 
         if(!$appState.files.length) return;
 
-        const key = e.key;
-
         if(e.shiftKey){
-            return moveSelectionByShit(key);
+            return moveSelectionByShit(e.key);
         }
 
         const currentId = $appState.selection.selectedId ? $appState.selection.selectedId : $appState.files[0].id
         const currentIndex = getChildIndex(currentId);
-        const nextId = key === "ArrowDown" ? $appState.files[currentIndex+1]?.id : $appState.files[currentIndex-1]?.id
+        const nextId = e.key === "ArrowDown" ? $appState.files[currentIndex+1]?.id : $appState.files[currentIndex-1]?.id
         const nextElement = document.getElementById(nextId)
 
         if(!nextElement) return;
@@ -342,9 +334,9 @@
 
     const moveSelectionUpto = (e:KeyboardEvent) => {
 
-        if(!$appState.files.length) return;
-
         if(!e.shiftKey) return;
+
+        if(!$appState.files.length) return;
 
         e.preventDefault();
 
@@ -364,10 +356,8 @@
     }
 
     const changeCurrent = (data:Mp.FileLoadEvent) => {
-
         dispatch({type:"playlingItemId", value:data.currentFile.id})
         select(data.currentFile.id)
-
     }
 
     const setInputFocus = (node:HTMLInputElement) => {
@@ -376,11 +366,9 @@
     }
 
     const onInputChange = (e:Event) => {
-
         if(!e.target || !(e.target instanceof HTMLInputElement)) return;
 
         dispatch({type:"udpateName", value:e.target.value})
-
     }
 
     const startEditFileName = () => {
@@ -413,9 +401,7 @@
     }
 
     const hideRenameField = () => {
-
         dispatch({type:"endRename"})
-
     }
 
     const endEditFileName = () => {
@@ -489,36 +475,22 @@
 
     }
 
-    const onReset = () => {
-
-        dispatch({type: "playlingItemId", value:""})
-        dispatch({type:"clearSelection"})
-        clearPlaylist();
-
-    }
-
     const toggleShuffle = () => {
         dispatch({type:"toggleShuffle"})
         window.api.send("toggle-shuffle", {})
     }
 
     const addToPlaylist = (data:Mp.PlaylistChangeEvent) => {
-
         dispatch({type:"files", value:data.files})
-
     }
 
     const applySortType = (sortType:Mp.SortType) => {
-
         dispatch({type:"sortType", value:sortType})
-
     }
 
     const prepare = (e:Mp.ReadyEvent) => {
-
         lang = e.config.lang;
         applySortType(e.config.sort)
-
     }
 
     const close = () => {
@@ -567,15 +539,10 @@
         window.api.receive("after-remove-playlist", removeFromPlaylist)
         window.api.receive("after-rename", onRename);
         window.api.receive("start-rename", startEditFileName)
-        window.api.receive("restart", onReset)
+        window.api.receive("restart", clearPlaylist)
         window.api.receive("clear-playlist", clearPlaylist)
 
-        window.addEventListener("contextmenu", onContextMenu)
-        window.addEventListener("keydown",onKeydown)
-
         return () => {
-            window.removeEventListener("contextmenu", onContextMenu)
-            window.removeEventListener("keydown",onKeydown)
             window.api.removeAllListeners("ready");
             window.api.removeAllListeners("sort-type-change")
             window.api.removeAllListeners("playlist-change")
@@ -591,11 +558,13 @@
 
 </script>
 
+<svelte:window on:contextmenu={onContextMenu} on:keydown={onKeydown}/>
+
 <div class="playlist">
     <div class="playlist-title-bar">
         <div class="playlist-close-btn" on:click={close} on:keydown={handleKeyEvent} role="button" tabindex="-1">&times;</div>
     </div>
-    <div class="playlist-viewport" bind:this={fileListContainer} on:mousedown={onMouseDown} role="button" tabindex="-1" on:drop|preventDefault={onFileDrop} on:dragover={e => e.preventDefault()}>
+    <div class="playlist-viewport" class:group-by={$appState.sortType.groupBy} bind:this={fileListContainer} on:mousedown={onMouseDown} role="button" tabindex="-1" on:drop={onFileDrop} on:dragover={e => e.preventDefault()}>
         {#if $appState.rename.renaming}
             <input
                 type="text"
@@ -620,14 +589,14 @@
             onDragEnd={onDragEnd}
         />
     </div>
-    <div class="playlist-footer {$appState.shuffle ? "shuffle" : ""}">
+    <div class="playlist-footer" class:shuffle={$appState.shuffle}>
         <div class="btn shuffle-btn" title={t("shuffle")} on:click={toggleShuffle} on:keydown={toggleShuffle} role="button" tabindex="-1">
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"/>
                 <path d="M13 5.466V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192zm0 9v-3.932a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"/>
             </svg>
         </div>
-        <div class="btn" title={t("sort")} on:click={openSorttMenu} on:keydown={handleKeyEvent} role="button" tabindex="0">
+        <div class="btn" title={t("sort")} on:click={openSorttMenu} on:keydown={handleKeyEvent} role="button" tabindex="-1">
             {#if $appState.sortType.order == "NameAsc"}
                 <svg xmlns="http://www.w3.org/2000/svg" id="nameAsc" fill="currentColor" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M10.082 5.629 9.664 7H8.598l1.789-5.332h1.234L13.402 7h-1.12l-.419-1.371h-1.781zm1.57-.785L11 2.687h-.047l-.652 2.157h1.351z"/>

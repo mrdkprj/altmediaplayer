@@ -359,6 +359,7 @@ export default class Helper{
     createPlaylistSortContextMenu(onclick: (menu:Mp.PlaylistContextMenuType, args?:Mp.ContextMenuSubType) => void){
 
         const type = "Sort"
+        const toggleExcepts = ["groupby"]
         const template:Electron.MenuItemConstructorOptions[] = [
             {
                 id:"groupby",
@@ -373,28 +374,28 @@ export default class Helper{
                 label: this.t("nameAsc"),
                 type: "checkbox",
                 checked: this.config.sort.order === "NameAsc",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "NameAsc"))
+                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "NameAsc"), toggleExcepts)
             },
             {
                 id: "NameDesc",
                 label: this.t("nameDesc"),
                 type: "checkbox",
                 checked: this.config.sort.order === "NameDesc",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"NameDesc"))
+                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"NameDesc"), toggleExcepts)
             },
             {
                 id: "DateAsc",
                 label: this.t("dateAsc"),
                 type: "checkbox",
                 checked: this.config.sort.order === "DateAsc",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateAsc"))
+                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateAsc"), toggleExcepts)
             },
             {
                 id: "DateDesc",
                 label: this.t("dateDesc"),
                 type: "checkbox",
                 checked: this.config.sort.order === "DateDesc",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateDesc"))
+                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateDesc"), toggleExcepts)
             },
         ]
 
@@ -442,14 +443,20 @@ export default class Helper{
         ]
     }
 
-    private toggleMenuItemCheckbox(menuItem:Electron.MenuItem, onclick:() => void){
+    private toggleMenuItemCheckbox(menuItem:Electron.MenuItem, onclick:() => void, excepts?:string[]){
 
         menuItem.menu.items.forEach((item:Electron.MenuItem) => {
+
+            if(excepts && excepts.includes(item.id)){
+                return;
+            }
+
             if(item.id === menuItem.id){
                 item.checked = true;
             }else{
                 item.checked = false;
             }
+
         })
 
         onclick()

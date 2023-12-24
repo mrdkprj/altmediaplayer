@@ -20,5 +20,5 @@
     "types": ["electron-vite/node", "vite/client"],
     "lib": ["ESNext", "DOM", "DOM.Iterable"]
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]
+  "include": ["src/*.ts","src/**/*.ts", "src/**/*.svelte"]
 }

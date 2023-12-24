@@ -1,4 +1,4 @@
-import { writable, get } from "svelte/store";
+import { writable, get } from "svelte/store"
 import { en } from "./en";
 import { ja } from "./ja";
 

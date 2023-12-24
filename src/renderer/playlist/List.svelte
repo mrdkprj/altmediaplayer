@@ -9,7 +9,7 @@
     export let onDragEnd:(e:DragEvent) => void;
 </script>
 
-<div id="fileList" class="file-list {sortType.groupBy ? "group-by" : "" }">
+<div id="fileList" class="file-list" class:grou-by={sortType.groupBy}>
     {#each files as file, index}
 
         {#if index == 0 || files[index - 1].dir != files[index].dir }
@@ -19,11 +19,14 @@
                 <div class="right separator"></div>
             </div>
         {/if}
+
         <div
             title={file.name}
             id={file.id}
             draggable="true"
-            class="playlist-item {playlingItemId === file.id ? "current" : ""} {selection.selectedIds.includes(file.id) ? "selected" : ""}"
+            class="playlist-item"
+            class:current={playlingItemId === file.id}
+            class:selected={selection.selectedIds.includes(file.id)}
             data-dir={encodeURIComponent(file.dir)}
             on:dblclick={onFileListItemClicked}
             role="button"

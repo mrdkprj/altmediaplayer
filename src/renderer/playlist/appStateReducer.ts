@@ -47,8 +47,8 @@ type AppAction =
 | {type: "selectedId", value: string}
 | {type: "setSelectedIds", value: string[]}
 | {type: "replaceSelectedIds", value: {id:string,index:number}}
-| {type: "appendSelectedIds", value: string}
 | {type: "clearSelection"}
+| {type: "updatSelectedIds", value:string[]}
 | {type: "updateSelection", value:Mp.PlaylistItemSelection}
 | {type: "sortType", value:Mp.SortType}
 | {type: "files", value:Mp.MediaFile[]}
@@ -79,13 +79,11 @@ const updater = (state:AppState, action:AppAction) => {
         case "clearSelection":
             return {...state, selection:{...state.selection, selectedId:"", selectedIds:[]}}
 
-        case "updateSelection":{
-            if(action.value.selectedId){
-                return {...state, selection:{...state.selection, selectedId:action.value.selectedId, selectedIds:action.value.selectedIds}};
-            }else{
-                return {...state, selection:{...state.selection, selectedIds:action.value.selectedIds}};
-            }
-        }
+        case "updatSelectedIds":
+            return {...state, selection:{...state.selection, selectedIds:[...state.selection.selectedIds, ...action.value]}};
+
+        case "updateSelection":
+            return {...state, selection:{...state.selection, selectedId:action.value.selectedId, selectedIds:action.value.selectedIds}};
 
         case "sortType":
             return {...state, sortType:action.value}
