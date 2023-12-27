@@ -242,7 +242,7 @@
 
     const selectByShift = (target:HTMLElement) => {
 
-        dispatch({type:"clearSelection"})
+        dispatch({type:"setSelectedIds", value:[]})
 
         const range = [];
 
@@ -481,6 +481,7 @@
     }
 
     const addToPlaylist = (data:Mp.PlaylistChangeEvent) => {
+        dispatch({type:"subscribeListUpdate", value:true})
         dispatch({type:"files", value:data.files})
     }
 
@@ -528,6 +529,13 @@
 
         return handleShortcut("Playlist", e);
 
+    }
+
+    const onListUpdate = () => {
+        if($appState.subscribeListUpdate){
+            dispatch({type:"subscribeListUpdate", value:false})
+            select($appState.playlingItemId)
+        }
     }
 
     onMount(() => {
@@ -587,6 +595,7 @@
             onDragStart={onDragStart}
             onDragEnter={onDragEnter}
             onDragEnd={onDragEnd}
+            onUpdate={onListUpdate}
         />
     </div>
     <div class="playlist-footer" class:shuffle={$appState.shuffle}>

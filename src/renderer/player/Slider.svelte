@@ -30,7 +30,7 @@
     const THUM_WIDTH = 8;
 
     let sliding = false;
-    let rect:SliderRect = {top:0, left:0, bottom:0, width:0}
+    let rect:DOMRect;
     let toolTip:TooltipState = {visible:false, text:"", top:0, left:0}
     let slider:HTMLDivElement
     let startX = 0;
@@ -100,13 +100,17 @@
         return `${Math.floor(value * 100)}%`;
     }
 
+    const setRect = () => {
+        rect = slider.getBoundingClientRect()
+    }
+
     onMount(() => {
-        const {top, bottom, left, width} = slider.getBoundingClientRect()
-        rect = {top, bottom, left, width}
+        setRect();
     })
 
 </script>
 
+<svelte:window on:resize={setRect} />
 <svelte:document on:mousemove={moveSlider} on:mouseup={endSlide}/>
 
 {#if toolTip.visible}

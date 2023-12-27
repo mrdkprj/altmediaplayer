@@ -20,6 +20,7 @@ type AppState = {
     sortType:Mp.SortType;
     files:Mp.MediaFile[];
     preventBlur:boolean;
+    subscribeListUpdate:boolean;
     rename:RenameState;
 }
 
@@ -30,6 +31,7 @@ export const initialAppState : AppState = {
     sortType:{order:"NameAsc", groupBy:false},
     files:[],
     preventBlur:false,
+    subscribeListUpdate:false,
     rename:{
         renaming:false,
         inputValue:"",
@@ -57,6 +59,7 @@ type AppAction =
 | {type: "preventBlur", value: boolean}
 | {type: "toggleShuffle"}
 | {type: "udpateName", value:string}
+| {type: "subscribeListUpdate", value:boolean}
 
 const updater = (state:AppState, action:AppAction) => {
 
@@ -105,6 +108,10 @@ const updater = (state:AppState, action:AppAction) => {
 
         case "toggleShuffle":
             return {...state, shuffle:!state.shuffle}
+
+        case "subscribeListUpdate":
+            return {...state, subscribeListUpdate:action.value}
+
         default:
             return state;
     }

@@ -1,9 +1,9 @@
-import {build} from "electron-builder"
+import { build } from "electron-builder"
 
 build({
     config: {
         appId: "com.altmediaplayer.app",
-        productName: "altmediaplayer",
+        productName: "altmediaplayer2",
         extraResources:[
             "./resources/ffmpeg.exe",
             "./resources/ffprobe.exe"

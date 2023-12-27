@@ -72,13 +72,6 @@ declare global {
         removeAllListeners: <K extends keyof RendererChannelEventMap>(channel:K) => void;
     }
 
-    const PLAYER_WINDOW_VITE_DEV_SERVER_URL: string;
-    const PLAYER_WINDOW_VITE_NAME: string;
-    const PLAYLIST_WINDOW_VITE_DEV_SERVER_URL: string;
-    const PLAYLIST_WINDOW_VITE_NAME: string;
-    const CONVERT_WINDOW_VITE_DEV_SERVER_URL: string;
-    const CONVERT_WINDOW_VITE_NAME: string;
-
     namespace Mp {
 
         type Lang = "en" | "ja";

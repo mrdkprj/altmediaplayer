@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { afterUpdate } from "svelte";
+
     export let playlingItemId:string;
     export let files:Mp.MediaFile[]
     export let selection:Mp.PlaylistItemSelection
@@ -7,6 +9,12 @@
     export let onDragStart:(e:DragEvent) => void;
     export let onDragEnter:(e:DragEvent) => void;
     export let onDragEnd:(e:DragEvent) => void;
+    export let onUpdate:() => void;
+
+    afterUpdate(() => {
+        onUpdate()
+    })
+
 </script>
 
 <div id="fileList" class="file-list" class:grou-by={sortType.groupBy}>
@@ -38,4 +46,3 @@
 
     {/each}
 </div>
-
