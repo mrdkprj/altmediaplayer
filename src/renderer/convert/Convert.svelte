@@ -11,9 +11,9 @@
     const { appState, dispatch } = reducer(initialAppState);
     const t = useTranslation(lang);
 
-    const beforeOpen = (data:Mp.OpenConvertDialogEvent) => {
+    const beforeOpen = (e:Mp.OpenConvertDialogEvent) => {
         if(!$appState.converting){
-            changeSourceFile(data.file)
+            changeSourceFile(e.file)
         }
     }
 

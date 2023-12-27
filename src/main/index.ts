@@ -462,7 +462,7 @@ const changePlaylistItemOrder = (data:Mp.ChangePlaylistOrderRequet) => {
 
     currentIndex = playlistFiles.findIndex(file => file.id == currentId);
 
-    respond("Playlist", "playlist-change", {files:playlistFiles})
+    respond("Playlist", "playlist-change", {files:playlistFiles, type:"Move"})
 
 }
 
@@ -599,7 +599,7 @@ const sortPlayList = () => {
         currentIndex = sortedIds.findIndex(id => id === currentFileId);
     }
 
-    respond("Playlist", "playlist-change", {files:playlistFiles})
+    respond("Playlist", "playlist-change", {files:playlistFiles, type:"Append"})
 
 }
 

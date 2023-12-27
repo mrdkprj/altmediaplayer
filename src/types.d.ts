@@ -81,7 +81,7 @@ declare global {
         type PlayerContextMenuType = "PlaybackSpeed" | "SeekSpeed" | "TogglePlaylistWindow" | "FitToWindow" | "ToggleFullscreen" | "Theme" | "Capture" | "PictureInPicture"
         type PlaylistContextMenuType = "Remove" | "RemoveAll" | "Trash" | "CopyFileName" | "CopyFullpath" | "Reveal" | "Metadata" | "Convert" | "Sort" | "Rename" | "LoadList" | "SaveList" | "GroupBy"
         type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2;
-        type SeekSpeed = 0.03 | 0.05 | 0.1 | 0.5 | 1 | 5 | 10 | 20;
+        type SeekSpeed = 0.03 | 0.05 | 0.1 | 0.5 | 1 | 3 | 5 | 10 | 20;
         type SortOrder = "NameAsc" | "NameDesc" | "DateAsc" | "DateDesc"
         type FileDialogType = "Read" | "Write";
 
@@ -224,8 +224,18 @@ declare global {
             renderer:RendererName;
         }
 
+        type PlaylistChangeEventType = "Move" | "Append";
+
         type PlaylistChangeEvent = {
             files:MediaFile[];
+            type:PlaylistChangeEventType;
+        }
+
+        type ChangePlaylistOrderRequet = {
+            start:number;
+            end:number;
+            currentIndex:number;
+            type:PlaylistChangeEventType
         }
 
         type ProgressEvent = {
@@ -262,12 +272,6 @@ declare global {
 
         type PlaylistItemSelectionChange = {
             selection:PlaylistItemSelection
-        }
-
-        type ChangePlaylistOrderRequet = {
-            start:number;
-            end:number;
-            currentIndex:number;
         }
 
         type RemovePlaylistItemRequest = {

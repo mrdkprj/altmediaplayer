@@ -69,22 +69,6 @@
 
     }
 
-    const onDragStart = (e:DragEvent) => {
-        startDragPlaylistItem(e);
-    }
-
-    const onDragEnter = (e:DragEvent) => {
-        if(dragState.dragging){
-            toggleHighlightDropTarget(e);
-        }
-    }
-
-    const onDragEnd = (e:DragEvent) => {
-        if(dragState.dragging){
-            endDragPlaylistItem(e)
-        }
-    }
-
     const onFileDrop = (e:DragEvent) => {
 
         if(dragState.dragging) return;
@@ -101,6 +85,22 @@
         if(dropItems.length){
             const files = dropItems.map(item => item.getAsFile()?.path ?? "")
             window.api.send("drop", {files, renderer:"Playlist"})
+        }
+    }
+
+    const onDragStart = (e:DragEvent) => {
+        startDragPlaylistItem(e);
+    }
+
+    const onDragEnter = (e:DragEvent) => {
+        if(dragState.dragging){
+            toggleHighlightDropTarget(e);
+        }
+    }
+
+    const onDragEnd = (e:DragEvent) => {
+        if(dragState.dragging){
+            endDragPlaylistItem(e)
         }
     }
 
@@ -189,13 +189,12 @@
 
         if(dragState.targetElement){
 
-            const args = {
+            window.api.send("change-playlist-order", {
                 start:dragState.startIndex,
                 end:getChildIndex(dragState.targetElement.id),
-                currentIndex:getChildIndex($appState.playlingItemId)
-            }
-
-            window.api.send("change-playlist-order", args);
+                currentIndex:getChildIndex($appState.playlingItemId),
+                type:"Move"
+            });
 
             toggleHighlightDropTarget(e)
 
@@ -355,9 +354,9 @@
         window.api.send("load-file", {index, isAbsolute:true});
     }
 
-    const changeCurrent = (data:Mp.FileLoadEvent) => {
-        dispatch({type:"playlingItemId", value:data.currentFile.id})
-        select(data.currentFile.id)
+    const changeCurrent = (e:Mp.FileLoadEvent) => {
+        dispatch({type:"playlingItemId", value:e.currentFile.id})
+        select(e.currentFile.id)
     }
 
     const setInputFocus = (node:HTMLInputElement) => {
@@ -480,9 +479,11 @@
         window.api.send("toggle-shuffle", {})
     }
 
-    const addToPlaylist = (data:Mp.PlaylistChangeEvent) => {
-        dispatch({type:"subscribeListUpdate", value:true})
-        dispatch({type:"files", value:data.files})
+    const addToPlaylist = (e:Mp.PlaylistChangeEvent) => {
+        if(e.type == "Append"){
+            dispatch({type:"subscribeListUpdate", value:true})
+        }
+        dispatch({type:"files", value:e.files})
     }
 
     const applySortType = (sortType:Mp.SortType) => {

@@ -242,50 +242,56 @@ export default class Helper{
         const template:Electron.MenuItemConstructorOptions[] = [
             {
                 id: "seekspeed0",
-                label:`0.03sec`,
+                label:`0.03${this.t("second")}`,
                 type:"checkbox",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.03))
             },
             {
                 id: "seekspeed1",
-                label:`0.05sec`,
+                label:`0.05${this.t("second")}`,
                 type:"checkbox",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.05))
             },
             {
                 id: "seekspeed2",
-                label:`0.1sec`,
+                label:`0.1${this.t("second")}`,
                 type:"checkbox",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.1))
             },
             {
                 id: "seekspeed3",
-                label:`0.5sec`,
+                label:`0.5${this.t("second")}`,
                 type:"checkbox",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.5))
             },
             {
                 id: "seekspeed4",
-                label:`1sec`,
+                label:`1${this.t("second")}`,
                 type:"checkbox",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 1))
             },
             {
                 id: "seekspeed5",
-                label:`5sec - Default`,
+                label:`3${this.t("second")}`,
+                type:"checkbox",
+                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 3))
+            },
+            {
+                id: "seekspeed6",
+                label:`5${this.t("second")} - ${this.t("default")}`,
                 type:`checkbox`,
                 checked:true,
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 5))
             },
             {
-                id: "seekspeed6",
-                label:`10sec`,
+                id: "seekspeed7",
+                label:`10${this.t("second")}`,
                 type:"checkbox",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 10))
             },
             {
-                id: "seekspeed7",
-                label:`20sec`,
+                id: "seekspeed8",
+                label:`20${this.t("second")}`,
                 type:"checkbox",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 20))
             },
