@@ -251,15 +251,13 @@ const onPlayerReady = () => {
         Renderers.Playlist?.show();
     }
 
-    Renderers.Player?.on("show", () => {
-        respond("Player", "ready", {config:config.data});
-        respond("Playlist", "ready", {config:config.data});
-        respond("Convert", "ready", {config:config.data});
+    respond("Player", "ready", {config:config.data});
+    respond("Playlist", "ready", {config:config.data});
+    respond("Convert", "ready", {config:config.data});
 
-        togglePlay();
+    togglePlay();
 
-        initPlaylist(util.extractFilesFromArgv())
-    })
+    initPlaylist(util.extractFilesFromArgv())
 
 }
 
