@@ -389,6 +389,7 @@ declare global {
             start:string;
             cancel:string;
             close:string;
+            mute:string;
         }
 
     }

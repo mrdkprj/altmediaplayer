@@ -1,11 +1,18 @@
 <script lang="ts">
 
     import { onMount } from "svelte";
-    import { FORWARD, BACKWARD, APP_NAME, handleKeyEvent } from "../../constants";
     import { reducer, initialAppState } from "./appStateReducer";
+    import { useTranslation } from "../../translation/useTranslation"
+
+    import { FORWARD, BACKWARD, APP_NAME, handleKeyEvent } from "../../constants";
     import { handleShortcut } from "../shortcut";
     import Footer from "./Footer.svelte";
     import icon from "../../assets/icon.ico"
+
+    let video:HTMLVideoElement
+    let container:HTMLDivElement
+    let hideControlTimeout:number | null
+    let lang:Mp.Lang = "en";
 
     const Buttons = {
         left:0,
@@ -13,9 +20,7 @@
     }
 
     const { appState, dispatch } = reducer(initialAppState);
-    let video:HTMLVideoElement
-    let container:HTMLDivElement
-    let hideControlTimeout:number | null
+    const t = useTranslation(lang);
 
     const updateTime = (progress:number) => {
 
@@ -545,6 +550,7 @@
         onClickPrevious={playBackward}
         onClickNext={playFoward}
         onClickMute={toggleMute}
+        t={t}
     />
 
 </div>

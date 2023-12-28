@@ -2,6 +2,7 @@
 
     import Slider from "./Slider.svelte";
     import { Buttons, handleKeyEvent } from "../../constants";
+    import { reducer } from "./appStateReducer";
 
     export let playing:boolean;
     export let converting:boolean;
@@ -15,6 +16,7 @@
     export let onClickPrevious:(button:number) => void;
     export let onClickNext:(button:number) => void;
     export let onClickMute:() => void;
+    export let t:(key: keyof Mp.label) => string;
 
     const formatTime = (secondValue:number) => {
         const hours = (Math.floor(secondValue / 3600)).toString().padStart(2, "0");
@@ -37,7 +39,7 @@
 
 <div class="footer" on:mouseenter={onMouseEnter} role="button" tabindex="-1">
     <div class="footer-menu">
-        <div class="slider-area">
+        <div class="footer-top">
             <div class="time-area">
                 <Slider
                     sliderClass={["time"]}
@@ -53,11 +55,6 @@
                 />
                 <div class="track-value duration">{formatTime(media.videoDuration)}</div>
             </div>
-            <div class="volume-area">
-                <Slider sliderClass={["volume"]} thumbType="dot" onSlide={onUpdateVolume} value={media.videoVolume} valuePosition="right"/>
-            </div>
-        </div>
-        <div class="ctrl-area">
             <div class="btn-area">
                 <div class="btn-large" on:click={onClickPlay} on:keydown={handleKeyEvent} role="button" tabindex="-1">
                     {#if playing}
@@ -94,9 +91,13 @@
                     </div>
                 {/if}
             </div>
-
+        </div>
+        <div class="footer-bottom">
+            <div class="volume-area">
+                <Slider sliderClass={["volume"]} thumbType="dot" onSlide={onUpdateVolume} value={media.videoVolume} valuePosition="right"/>
+            </div>
             <div class="amp-area" class:mute={media.mute}>
-                <div class="btn sound" on:click={onClickMute} on:keydown={handleKeyEvent} role="button" tabindex="-1">
+                <div class="btn sound" on:click={onClickMute} on:keydown={handleKeyEvent} role="button" tabindex="-1" title={t("mute")}>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M9 4a.5.5 0 0 0-.812-.39L5.825 5.5H3.5A.5.5 0 0 0 3 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 9 12V4zm3.025 4a4.486 4.486 0 0 1-1.318 3.182L10 10.475A3.489 3.489 0 0 0 11.025 8 3.49 3.49 0 0 0 10 5.525l.707-.707A4.486 4.486 0 0 1 12.025 8z"/>
                     </svg>

@@ -44,4 +44,5 @@ export const ja:Mp.label = {
     start:"Start",
     cancel:"Cancel",
     close:"Close",
+    mute:"ミュート",
 }

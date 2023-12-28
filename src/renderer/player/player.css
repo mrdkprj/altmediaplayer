@@ -155,7 +155,7 @@
     width:100%;
     display: flex;
     justify-content: flex-start;
-    flex-direction: column;
+    flex-direction: row;
     position: relative;
 }
 
@@ -163,65 +163,35 @@
     border-top-color: transparent;
 }
 
-.ctrl-area{
-    height: 40px;
+.footer-top{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 3px;
+    flex: 1 1 auto;
+}
+
+.footer-bottom{
     margin-top: 5px;
     display: flex;
     justify-content: flex-start;
-    align-items: center;
+    align-items: flex-end;
+    flex-direction: column;
 }
 
 .btn-area{
+    width: 100%;
     display: flex;
     justify-content: flex-start;
     align-items: center;
     cursor: default;
     flex: 1 1 auto;
-    margin-bottom: 5px;
-}
-
-.btn,
-.btn-large{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-}
-
-.btn-large svg{
-    width: 30px;
-    height: 30px;
-    pointer-events: none;
-    margin-left: 7px;
-    color: var(--secondary-highlight-color);
-}
-
-.btn svg{
-    width: 17px;
-    height: 30px;
-    padding: 0 7px;
-    pointer-events: none;
-    color: var(--secondary-highlight-color);
-}
-
-.btn:hover svg,
-.btn-large:hover svg{
-    color: var(--primary-highlight-color);
-}
-
-.slider-area{
-    height: 14px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    margin-top: 3px;
 }
 
 .time-area{
+    width: 100%;
     display: flex;
-    margin: 0px 10px;
     font-size: 12px;
-    flex: 1 1 auto;
     align-items: center;
 }
 
@@ -257,12 +227,6 @@
 .slider:hover{
     height:6px;
 }
-
-/*
-.time-area .slider{
-    background-color: var(--primary-highlight-color);
-}
-*/
 
 .track{
     width:0%;
@@ -373,6 +337,39 @@
     text-align: left;
     width: 45px;
     color: var(--slider-track-value-color);
+}
+
+.track-value.current-time{
+    margin-left: 15px;
+}
+
+.btn,
+.btn-large{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.btn-large svg{
+    width: 30px;
+    height: 30px;
+    pointer-events: none;
+    margin-left: 7px;
+    color: var(--secondary-highlight-color);
+}
+
+.btn svg{
+    width: 17px;
+    height: 30px;
+    padding: 0 7px;
+    pointer-events: none;
+    color: var(--secondary-highlight-color);
+}
+
+.btn:hover svg,
+.btn-large:hover svg{
+    color: var(--primary-highlight-color);
 }
 
 .btn-separator{

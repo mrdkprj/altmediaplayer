@@ -44,4 +44,5 @@ export const en:Mp.label = {
     start:"Start",
     cancel:"Cancel",
     close:"Close",
+    mute:"Mute",
 }
