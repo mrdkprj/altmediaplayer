@@ -123,9 +123,11 @@
 
     }
 
-    const scrollToElement = (element:HTMLElement | null) => {
+    const scrollToElement = (id:string) => {
 
-        if(!element || !fileListContainer) return;
+        const element = document.getElementById(id);
+
+        if(!element) return;
 
         const rect = element.getBoundingClientRect();
         const containerRect = fileListContainer.getBoundingClientRect();
@@ -208,38 +210,39 @@
 
     const toggleSelect = (e:MouseEvent) => {
 
+        const id = (e.target as HTMLElement).id;
+
         if(e.ctrlKey){
-            selectByCtrl(e.target as HTMLElement)
+            selectByCtrl(id)
             return;
         }
 
         if(e.shiftKey){
-            selectByShift(e.target as HTMLElement);
+            selectByShift(id);
             return
         }
 
-        selectByClick(e.target as HTMLElement);
+        selectByClick(id);
 
     }
 
-    const select = (target:HTMLElement | string) => {
+    const select = (id:string) => {
 
         clearSelection();
 
-        const id = typeof target === "string" ? target : target.id;
         dispatch({type:"updateSelection", value:{selectedId:id, selectedIds:[id]}})
 
-        scrollToElement(document.getElementById(id))
+        scrollToElement(id)
 
         window.api.send("playlist-item-selection-change", {selection:$appState.selection})
 
     }
 
-    const selectByClick = (target:HTMLElement) => {
-        select(target);
+    const selectByClick = (id:string) => {
+        select(id);
     }
 
-    const selectByShift = (target:HTMLElement) => {
+    const selectByShift = (id:string) => {
 
         dispatch({type:"setSelectedIds", value:[]})
 
@@ -251,7 +254,7 @@
             range.push(0);
         }
 
-        range.push(getChildIndex(target.id));
+        range.push(getChildIndex(id));
 
         range.sort((a,b) => a - b);
 
@@ -266,16 +269,14 @@
 
     }
 
-    const selectByCtrl = (target:HTMLElement) => {
+    const selectByCtrl = (id:string) => {
 
         if(!$appState.selection.selectedId){
-            selectByClick(target);
+            selectByClick(id);
             return;
         }
 
-        if(target.classList.contains("group")) return;
-
-        dispatch({type:"updatSelectedIds", value:[target.id]})
+        dispatch({type:"updatSelectedIds", value:[id]})
 
         window.api.send("playlist-item-selection-change", {selection:$appState.selection})
     }
@@ -302,12 +303,11 @@
 
         const currentId = downward ? $appState.selection.selectedIds[$appState.selection.selectedIds.length -1] : $appState.selection.selectedIds[0]
         const currentIndex = getChildIndex(currentId);
-        const nextElementId = key === "ArrowDown" ? $appState.files[currentIndex+1]?.id : $appState.files[currentIndex-1]?.id
-        const nextElement = document.getElementById(nextElementId)
+        const nextId = key === "ArrowDown" ? $appState.files[currentIndex+1]?.id : $appState.files[currentIndex-1]?.id
 
-        if(!nextElement) return;
+        if(!nextId) return;
 
-        return selectByShift(nextElement);
+        return selectByShift(nextId);
 
     }
 
@@ -322,12 +322,11 @@
         const currentId = $appState.selection.selectedId ? $appState.selection.selectedId : $appState.files[0].id
         const currentIndex = getChildIndex(currentId);
         const nextId = e.key === "ArrowDown" ? $appState.files[currentIndex+1]?.id : $appState.files[currentIndex-1]?.id
-        const nextElement = document.getElementById(nextId)
 
-        if(!nextElement) return;
+        if(!nextId) return;
 
         clearSelection();
-        select(nextElement.id)
+        select(nextId)
 
     }
 
@@ -342,10 +341,10 @@
         const targetId = e.key === "Home" ? $appState.files[0].id : $appState.files[$appState.files.length - 1].id
         const target = document.getElementById(targetId);
 
-        if(!target) return;
+        if(!targetId) return;
 
-        selectByShift(target);
-        scrollToElement(target)
+        selectByShift(targetId);
+        scrollToElement(targetId)
 
     }
 
