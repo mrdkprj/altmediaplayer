@@ -434,13 +434,7 @@
             return;
         }
 
-        const fileName = data.file.name
-
-        const target = document.getElementById($appState.selection.selectedId)
-        if(target){
-            target.textContent = fileName
-            target.title = fileName
-        }
+        dispatch({type:"rename", value:data.file.name})
 
         hideRenameField();
 

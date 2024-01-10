@@ -343,6 +343,11 @@ export default class Helper{
                 label: this.t("convert"),
                 click: () => onclick("Convert")
             },
+            // { type: "separator" },
+            // {
+            //     label:"Tag":
+            //     submenu:this.createTagContextMenu(onclick)
+            // }
             { type: "separator" },
             {
                 label: this.t("loadList"),
@@ -359,6 +364,16 @@ export default class Helper{
             },
         ]
 
+        return Menu.buildFromTemplate(template);
+    }
+
+    createTagContextMenu(onclick: (menu:Mp.PlaylistContextMenuType, args?:Mp.ContextMenuSubType) => void){
+        const template:Electron.MenuItemConstructorOptions[] = this.config.tags.map(tag => {
+                return {
+                    label: tag,
+                    click: () => onclick("RemoveAll")
+                }
+            })
         return Menu.buildFromTemplate(template);
     }
 

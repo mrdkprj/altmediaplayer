@@ -58,6 +58,7 @@ type AppAction =
 | {type: "endRename"}
 | {type: "preventBlur", value: boolean}
 | {type: "toggleShuffle"}
+| {type: "rename", value:string}
 | {type: "udpateName", value:string}
 | {type: "subscribeListUpdate", value:boolean}
 
@@ -99,6 +100,16 @@ const updater = (state:AppState, action:AppAction) => {
 
         case "udpateName":
             return {...state, rename:{...state.rename, inputValue:action.value}}
+
+        case "rename":{
+            const files = [...state.files]
+            const target = files.find(file => file.id == state.selection.selectedId)
+            if(target){
+                target.name = action.value
+            }
+
+            return {...state, files}
+        }
 
         case "endRename":
             return {...state, rename:{...state.rename, renaming:false}}

@@ -29,8 +29,10 @@ const Renderers:Renderer = {
     Convert:null,
 }
 
-const additionalFiles:string[] = [];
 const playlistFiles:Mp.MediaFile[] = []
+const playlistSelection:Mp.PlaylistItemSelection = {selectedId:"", selectedIds:[]};
+
+const additionalFiles:string[] = [];
 const secondInstanceState:Mp.SecondInstanceState = {
     timeout:null,
     requireInitPlaylist:false,
@@ -39,7 +41,6 @@ const secondInstanceState:Mp.SecondInstanceState = {
 let mediaPlayStatus:Mp.PlayStatus;
 let doShuffle = false;
 let currentIndex = -1;
-const playlistSelection:Mp.PlaylistItemSelection = {selectedId:"", selectedIds:[]};
 let randomIndices:number[] = [];
 
 const thumbButtonCallback = (button:Mp.ThumbButtonType) => {

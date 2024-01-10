@@ -143,6 +143,7 @@ declare global {
                 playlistDestDir:string;
             },
             lang:Mp.Lang;
+            tags:string[];
         }
 
         type MediaFile = {

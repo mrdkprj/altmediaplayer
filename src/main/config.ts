@@ -29,7 +29,8 @@ const defaultConfig :Mp.Config = {
         convertDestDir:"",
         playlistDestDir:"",
     },
-    lang:"en"
+    lang:"en",
+    tags:[],
 }
 
 export default class Config{
