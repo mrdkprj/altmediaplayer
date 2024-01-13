@@ -13,13 +13,6 @@
     export let valuePosition:"left" | "right"
     export let offSet:number | null = null;
 
-    type SliderRect = {
-        top:number;
-        bottom:number;
-        left:number;
-        width:number;
-    }
-
     type TooltipState = {
         visible:boolean;
         text:string;

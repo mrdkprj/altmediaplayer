@@ -13,15 +13,23 @@ type RenameState = {
     rect:RenamePartialRect;
 }
 
+type DragState = {
+    dragging:boolean;
+    dir:string;
+    startId:string;
+    targetId:string;
+}
+
 type AppState = {
     playlingItemId:string;
     selection:Mp.PlaylistItemSelection;
     shuffle:boolean;
     sortType:Mp.SortType;
     files:Mp.MediaFile[];
+    updateType: Mp.PlaylistChangeEventType;
     preventBlur:boolean;
-    subscribeListUpdate:boolean;
     rename:RenameState;
+    dragState:DragState;
 }
 
 export const initialAppState : AppState = {
@@ -30,8 +38,8 @@ export const initialAppState : AppState = {
     shuffle:false,
     sortType:{order:"NameAsc", groupBy:false},
     files:[],
+    updateType:"Append",
     preventBlur:false,
-    subscribeListUpdate:false,
     rename:{
         renaming:false,
         inputValue:"",
@@ -41,11 +49,18 @@ export const initialAppState : AppState = {
             width:0,
             height:0,
         }
+    },
+    dragState:{
+        dragging:false,
+        dir:"",
+        startId:"",
+        targetId:"",
     }
 }
 
 type AppAction =
 | {type: "playlingItemId", value: string}
+| {type: "clear"}
 | {type: "selectedId", value: string}
 | {type: "setSelectedIds", value: string[]}
 | {type: "replaceSelectedIds", value: {id:string,index:number}}
@@ -53,20 +68,30 @@ type AppAction =
 | {type: "updatSelectedIds", value:string[]}
 | {type: "updateSelection", value:Mp.PlaylistItemSelection}
 | {type: "sortType", value:Mp.SortType}
-| {type: "files", value:Mp.MediaFile[]}
+| {type: "files", value:{files:Mp.MediaFile[], type:Mp.PlaylistChangeEventType}}
 | {type: "startRename", value:{rect:RenamePartialRect, value:string}}
 | {type: "endRename"}
 | {type: "preventBlur", value: boolean}
 | {type: "toggleShuffle"}
-| {type: "rename", value:string}
+| {type: "rename", value:{name:string, id:string}}
 | {type: "udpateName", value:string}
-| {type: "subscribeListUpdate", value:boolean}
+| {type: "startDrag", value:{startId:string, dir:string}}
+| {type: "drag", value:string}
+| {type: "endDrag"}
 
 const updater = (state:AppState, action:AppAction) => {
 
     switch (action.type) {
         case "playlingItemId":
             return {...state, playlingItemId:action.value}
+
+        case "clear":
+            return {...state,
+                playlingItemId: "",
+                files:[],
+                updateType:"Append" as Mp.PlaylistChangeEventType,
+                selection:{...state.selection, selectedId:"", selectedIds:[]},
+            }
 
         case "selectedId":
             return {...state, selection:{...state.selection, selectedId:action.value}}
@@ -93,7 +118,7 @@ const updater = (state:AppState, action:AppAction) => {
             return {...state, sortType:action.value}
 
         case "files":
-            return {...state, files:action.value}
+            return {...state, files:action.value.files, updateType:action.value.type}
 
         case "startRename":
             return {...state, rename:{...state.rename, renaming:true, rect:action.value.rect, inputValue:action.value.value}}
@@ -103,9 +128,9 @@ const updater = (state:AppState, action:AppAction) => {
 
         case "rename":{
             const files = [...state.files]
-            const target = files.find(file => file.id == state.selection.selectedId)
+            const target = files.find(file => file.id == action.value.id)
             if(target){
-                target.name = action.value
+                target.name = action.value.name
             }
 
             return {...state, files}
@@ -114,27 +139,30 @@ const updater = (state:AppState, action:AppAction) => {
         case "endRename":
             return {...state, rename:{...state.rename, renaming:false}}
 
+        case "startDrag":
+            return {...state, dragState:{...state.dragState, dragging:true, startId:action.value.startId, dir:action.value.dir}}
+
+        case "drag":
+            return {...state, dragState:{...state.dragState, targetId:action.value}}
+
+        case "endDrag":
+            return {...state, dragState:{...state.dragState, dragging:false, startId:"", dir:"", targetId:""}}
+
         case "preventBlur":
             return {...state, preventBlur:action.value}
 
         case "toggleShuffle":
             return {...state, shuffle:!state.shuffle}
 
-        case "subscribeListUpdate":
-            return {...state, subscribeListUpdate:action.value}
-
         default:
             return state;
     }
 }
 
-export const reducer = (state:AppState) => {
-	const store = writable(state);
+const store = writable(initialAppState);
 
-	const dispatch = (action:AppAction) => {
-        store.update(state => updater(state, action));
-	}
-
-	return {appState:store , dispatch}
+export const dispatch = (action:AppAction) => {
+    store.update(state => updater(state, action));
 }
 
+export const appState = store

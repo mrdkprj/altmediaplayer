@@ -1,7 +1,7 @@
 <script lang="ts">
 
     import { onMount } from "svelte";
-    import { reducer, initialAppState } from "./appStateReducer";
+    import { appState, dispatch } from "./appStateReducer";
     import { useTranslation } from "../../translation/useTranslation"
 
     import { FORWARD, BACKWARD, APP_NAME, handleKeyEvent } from "../../constants";
@@ -19,7 +19,6 @@
         right:2,
     }
 
-    const { appState, dispatch } = reducer(initialAppState);
     const t = useTranslation(lang);
 
     const updateTime = (progress:number) => {
@@ -538,9 +537,6 @@
     </div>
 
     <Footer
-        playing={$appState.playing}
-        converting={$appState.converting}
-        media={$appState.media}
         onMouseEnter={showControl}
         onUpdateTime={updateTime}
         onUpdateVolume={updateVolume}

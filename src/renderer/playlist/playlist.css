@@ -98,6 +98,8 @@
 
 .group{
     display: none;
+    pointer-events: none;
+    user-select: none;
 }
 
 .group-by .group{

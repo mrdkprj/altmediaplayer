@@ -4,13 +4,12 @@
     import List from "./List.svelte";
     import { handleShortcut } from "../shortcut"
     import { handleKeyEvent } from "../../constants";
-    import { reducer, initialAppState } from "./appStateReducer";
+    import { appState, dispatch } from "./appStateReducer";
     import { useTranslation } from "../../translation/useTranslation"
 
     let fileListContainer:HTMLDivElement;
     let lang:Mp.Lang = "en";
 
-    const { appState, dispatch } = reducer(initialAppState);
     const t = useTranslation(lang);
 
     const List_Item_Padding = 10;
@@ -21,13 +20,6 @@
         newName:""
     }
 
-    const dragState:Mp.PlaylistDragState = {
-        dragging: false,
-        startElement:null,
-        targetElement:null,
-        startIndex: -1,
-    }
-
     const undoStack:Mp.RenameData[] = []
     const redoStack:Mp.RenameData[] = []
 
@@ -36,42 +28,27 @@
         window.api.send("open-playlist-context", {})
     }
 
-    const onRenameInputKeyDown = (e:KeyboardEvent) => {
-        if($appState.rename.renaming && e.key === "Enter"){
-            e.stopPropagation();
-            e.preventDefault();
-            endEditFileName();
-        }
-    }
-
-    const openSorttMenu = (e:MouseEvent) => {
+    const openSortMenu = (e:MouseEvent) => {
         window.api.send("open-sort-context", {x:e.clientX, y:e.clientY})
     }
 
-    const onMouseDown = (e:MouseEvent) => {
+    const onPlaylistItemMousedown = (e:MouseEvent) => {
 
         if(!e.target || !(e.target instanceof HTMLElement)) return;
 
-        if(e.target.classList.contains("playlist-item")){
-
-            if(e.button === 2 && $appState.selection.selectedIds.length > 1){
-                if($appState.selection.selectedIds.includes(e.target.id)){
-                    return;
-                }
+        if(e.button === 2 && $appState.selection.selectedIds.length > 1){
+            if($appState.selection.selectedIds.includes(e.target.id)){
+                return;
             }
-
-            return toggleSelect(e)
         }
 
-        if(!e.target.classList.contains("group") && $appState.selection.selectedIds.length){
-            clearSelection();
-        }
+        return toggleSelect(e)
 
     }
 
     const onFileDrop = (e:DragEvent) => {
 
-        if(dragState.dragging) return;
+        if($appState.dragState.dragging) return;
 
         e.preventDefault();
         e.stopPropagation();
@@ -88,26 +65,8 @@
         }
     }
 
-    const onDragStart = (e:DragEvent) => {
-        startDragPlaylistItem(e);
-    }
-
-    const onDragEnter = (e:DragEvent) => {
-        if(dragState.dragging){
-            toggleHighlightDropTarget(e);
-        }
-    }
-
-    const onDragEnd = (e:DragEvent) => {
-        if(dragState.dragging){
-            endDragPlaylistItem(e)
-        }
-    }
-
     const clearPlaylist = () => {
-        dispatch({type:"clearSelection"})
-        dispatch({type:"playlingItemId", value:""})
-        dispatch({type:"files", value:[]})
+        dispatch({type:"clear"})
     }
 
     const clearSelection = () => {
@@ -118,9 +77,7 @@
     }
 
     const getChildIndex = (id:string | null | undefined) => {
-
         return $appState.files.findIndex(file => file.id == id)
-
     }
 
     const scrollToElement = (id:string) => {
@@ -148,64 +105,13 @@
 
         clearSelection();
 
-        dispatch({type:"files", value:data.files})
+        dispatch({type:"files", value:{files:data.files, type:"Append"}})
 
         if(shouldRestoreSelection && $appState.files.length){
             const nextId = selectedIndex > $appState.files.length - 1 ? $appState.files[selectedIndex - 1].id : $appState.files[selectedIndex].id
             dispatch({type:"updateSelection", value:{selectedId:nextId, selectedIds:[nextId]}})
         }
 
-    }
-
-    const startDragPlaylistItem = (e:DragEvent) => {
-        if(!e.target || !(e.target instanceof HTMLElement)) return;
-
-        e.stopPropagation();
-        dragState.dragging = true;
-        dragState.startElement = e.target;
-        dragState.startIndex = getChildIndex(e.target.id)
-    }
-
-    const toggleHighlightDropTarget = (e:DragEvent) => {
-
-        if(!e.target || !(e.target instanceof HTMLElement)) return;
-
-        if(!dragState.dragging) return;
-
-        dragState.targetElement?.classList.remove("draghover");
-
-        if(dragState.startElement?.getAttribute("data-dir") !== e.target.getAttribute("data-dir")){
-            dragState.targetElement = null;
-            return;
-        }
-
-        dragState.targetElement = e.target;
-
-        if(dragState.targetElement.id === dragState.startElement?.id) return;
-
-        dragState.targetElement.classList.add("draghover")
-
-    }
-
-    const endDragPlaylistItem = (e:DragEvent) => {
-
-        if(dragState.targetElement){
-
-            window.api.send("change-playlist-order", {
-                start:dragState.startIndex,
-                end:getChildIndex(dragState.targetElement.id),
-                currentIndex:getChildIndex($appState.playlingItemId),
-                type:"Move"
-            });
-
-            toggleHighlightDropTarget(e)
-
-        }
-
-        dragState.dragging = false;
-        dragState.startElement = null;
-        dragState.startIndex = -1;
-        dragState.targetElement = null;
     }
 
     const toggleSelect = (e:MouseEvent) => {
@@ -339,7 +245,6 @@
         e.preventDefault();
 
         const targetId = e.key === "Home" ? $appState.files[0].id : $appState.files[$appState.files.length - 1].id
-        const target = document.getElementById(targetId);
 
         if(!targetId) return;
 
@@ -348,25 +253,27 @@
 
     }
 
-    const onFileListItemClicked = (e:MouseEvent) => {
-        const index = getChildIndex((e.target as HTMLElement).id);
-        window.api.send("load-file", {index, isAbsolute:true});
-    }
-
     const changeCurrent = (e:Mp.FileLoadEvent) => {
         dispatch({type:"playlingItemId", value:e.currentFile.id})
         select(e.currentFile.id)
     }
 
     const setInputFocus = (node:HTMLInputElement) => {
+
         node.focus();
         node.setSelectionRange(0, node.value.lastIndexOf("."))
+
     }
 
-    const onInputChange = (e:Event) => {
+    const onRenameInputKeyDown = (e:KeyboardEvent) => {
+
         if(!e.target || !(e.target instanceof HTMLInputElement)) return;
 
-        dispatch({type:"udpateName", value:e.target.value})
+        if($appState.rename.renaming && e.key === "Enter"){
+            e.stopPropagation();
+            e.preventDefault();
+            endEditFileName();
+        }
     }
 
     const startEditFileName = () => {
@@ -398,14 +305,14 @@
 
     }
 
-    const hideRenameField = () => {
+    const endRename = () => {
         dispatch({type:"endRename"})
     }
 
     const endEditFileName = () => {
 
         if(renameData.oldName === $appState.rename.inputValue){
-            hideRenameField();
+            endRename();
         }else{
             renameData.newName = $appState.rename.inputValue;
             undoStack.push({...renameData})
@@ -421,21 +328,14 @@
 
     const onRename = (data:Mp.RenameResult) => {
 
-        if(!$appState.selection.selectedId) return;
-
-        if($appState.selection.selectedId !== data.file.id){
-            select(data.file.id);
-        }
-
-        if(data.error && $appState.rename.renaming){
+        if(data.error){
             undoStack.pop();
-            startEditFileName();
-            return;
+            select(data.file.id);
+        }else{
+            dispatch({type:"rename", value:{name:data.file.name, id:data.file.id}})
         }
 
-        dispatch({type:"rename", value:data.file.name})
-
-        hideRenameField();
+        endRename();
 
     }
 
@@ -473,10 +373,7 @@
     }
 
     const addToPlaylist = (e:Mp.PlaylistChangeEvent) => {
-        if(e.type == "Append"){
-            dispatch({type:"subscribeListUpdate", value:true})
-        }
-        dispatch({type:"files", value:e.files})
+        dispatch({type:"files", value:{files:e.files, type:e.type}})
     }
 
     const applySortType = (sortType:Mp.SortType) => {
@@ -525,13 +422,6 @@
 
     }
 
-    const onListUpdate = () => {
-        if($appState.subscribeListUpdate){
-            dispatch({type:"subscribeListUpdate", value:false})
-            select($appState.playlingItemId)
-        }
-    }
-
     onMount(() => {
 
         window.api.receive("ready", prepare);
@@ -566,40 +456,29 @@
     <div class="playlist-title-bar">
         <div class="playlist-close-btn" on:click={close} on:keydown={handleKeyEvent} role="button" tabindex="-1">&times;</div>
     </div>
-    <div class="playlist-viewport" class:group-by={$appState.sortType.groupBy} bind:this={fileListContainer} on:mousedown={onMouseDown} role="button" tabindex="-1" on:drop={onFileDrop} on:dragover={e => e.preventDefault()}>
+    <div class="playlist-viewport" class:group-by={$appState.sortType.groupBy} bind:this={fileListContainer} role="button" tabindex="-1" on:drop={onFileDrop} on:dragover={e => e.preventDefault()}>
         {#if $appState.rename.renaming}
             <input
                 type="text"
                 class="rename"
                 style="top:{$appState.rename.rect.top}px; left:{$appState.rename.rect.left}px; width:{$appState.rename.rect.width}px; height:{$appState.rename.rect.height}px"
-                value={$appState.rename.inputValue}
                 spellCheck="false"
                 on:blur={$appState.preventBlur ? undefined : endEditFileName}
                 on:keydown={onRenameInputKeyDown}
-                on:change={onInputChange}
+                bind:value={$appState.rename.inputValue}
                 use:setInputFocus
             />
         {/if}
-        <List
-            playlingItemId={$appState.playlingItemId}
-            files={$appState.files}
-            selection={$appState.selection}
-            sortType={$appState.sortType}
-            onFileListItemClicked={onFileListItemClicked}
-            onDragStart={onDragStart}
-            onDragEnter={onDragEnter}
-            onDragEnd={onDragEnd}
-            onUpdate={onListUpdate}
-        />
+        <List onMouseDown={onPlaylistItemMousedown} scrollToElement={scrollToElement} getChildIndex={getChildIndex}/>
     </div>
     <div class="playlist-footer" class:shuffle={$appState.shuffle}>
-        <div class="btn shuffle-btn" title={t("shuffle")} on:click={toggleShuffle} on:keydown={toggleShuffle} role="button" tabindex="-1">
+        <div class="btn shuffle-btn" title={t("shuffle")} on:click={toggleShuffle} on:keydown={handleKeyEvent} role="button" tabindex="-1">
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"/>
                 <path d="M13 5.466V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192zm0 9v-3.932a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"/>
             </svg>
         </div>
-        <div class="btn" title={t("sort")} on:click={openSorttMenu} on:keydown={handleKeyEvent} role="button" tabindex="-1">
+        <div class="btn" title={t("sort")} on:click={openSortMenu} on:keydown={handleKeyEvent} role="button" tabindex="-1">
             {#if $appState.sortType.order == "NameAsc"}
                 <svg xmlns="http://www.w3.org/2000/svg" id="nameAsc" fill="currentColor" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M10.082 5.629 9.664 7H8.598l1.789-5.332h1.234L13.402 7h-1.12l-.419-1.371h-1.781zm1.57-.785L11 2.687h-.047l-.652 2.157h1.351z"/>
