@@ -2,7 +2,6 @@ import {app, ipcMain, clipboard, dialog, shell, protocol, nativeTheme} from "ele
 
 import fs from "fs";
 import path from "path";
-import proc from "child_process";
 import url from "url"
 import Helper from "./helper";
 import Util from "./util";
@@ -551,7 +550,8 @@ const reveal = () => {
 
     if(!file) return;
 
-    proc.exec(`explorer /e,/select,${file.fullPath}`);
+    shell.showItemInFolder(file.fullPath)
+
 }
 
 const copyFileNameToClipboard = (fullPath:boolean) => {
