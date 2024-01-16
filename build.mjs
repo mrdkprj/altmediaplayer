@@ -8,6 +8,7 @@ build({
             "./resources/ffmpeg.exe",
             "./resources/ffprobe.exe"
         ],
+        includeSubNodeModules:false,
         win:{
             target: {
                 target: "nsis",
