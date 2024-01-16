@@ -80,7 +80,7 @@
                     </svg>
                 </div>
                 <div class="btn-separator"></div>
-                {#if $appState.playing}
+                {#if $appState.converting}
                     <div class="convert-state">
                         <div class="ring">
                             <div class="lds-dual-ring"></div>
