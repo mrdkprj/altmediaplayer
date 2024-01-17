@@ -6,9 +6,12 @@
     export let scrollToElement:(id:string) => void;
     export let getChildIndex:(id:string | null | undefined) => number;
 
+    let listSize = 0;
+
     afterUpdate(() => {
-        if($appState.updateType === "Append" && $appState.playlingItemId){
-            scrollToElement($appState.playlingItemId)
+        if($appState.files.length != listSize){
+            listSize = $appState.files.length
+            scrollToElement($appState.selection.selectedId)
         }
     })
 
