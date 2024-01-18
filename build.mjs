@@ -4,6 +4,9 @@ build({
     config: {
         appId: "com.altmediaplayer.app",
         productName: "altmediaplayer",
+        files:[
+            "out/**/*"
+        ],
         extraResources:[
             "./resources/ffmpeg.exe",
             "./resources/ffprobe.exe"
