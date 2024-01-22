@@ -8,6 +8,7 @@ export const EmptyFile:Mp.MediaFile = {
     date: 0,
     extension:"",
     dir:"",
+    tag:"",
 }
 
 export const VideoFormats = [
@@ -62,4 +63,4 @@ export const Buttons = {
     right:2,
 }
 
-export const handleKeyEvent = () => { console.log(1) }
+export const handleKeyEvent = () => { /**/ }

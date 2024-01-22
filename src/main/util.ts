@@ -2,13 +2,16 @@ import fs from "fs"
 import path from "path";
 import crypto from "crypto"
 import ffmpeg from "fluent-ffmpeg"
+import { exiftool } from "exiftool-vendored"
 import { Resolutions, Rotations } from "../constants";
+import { getAllComments } from "./metadata";
 
-export default class Util{
+class Util{
 
     private convertDestFile:string | null;
     private command:ffmpeg.FfmpegCommand | null;
     private isDev:boolean;
+    private tags:{[fullPath:string]:string} = {};
 
     constructor(){
         this.convertDestFile = null;
@@ -21,6 +24,10 @@ export default class Util{
 
         ffmpeg.setFfmpegPath(ffmpegPath)
         ffmpeg.setFfprobePath(ffprobePath)
+    }
+
+    async exit(){
+        await exiftool.end();
     }
 
     extractFilesFromArgv(target?:string[]){
@@ -49,6 +56,33 @@ export default class Util{
 
     }
 
+    async retrieveTags(fullPaths:string[], append:boolean){
+
+        const tags = await getAllComments(fullPaths)
+
+        if(append){
+            this.tags = {...this.tags, ...tags}
+        }else{
+            this.tags = tags;
+        }
+
+        return tags
+
+    }
+
+    getTag(fullPath:string){
+        return this.tags[fullPath]
+    }
+
+    private setTag(fullPath:string, tag:string){
+        this.tags[fullPath] = tag
+    }
+
+    async writeTag(fullPath:string, tag:string):Promise<void>{
+        await exiftool.write(fullPath, { Comment: tag }, ["-overwrite_original"])
+        this.setTag(fullPath, tag)
+    }
+
     toFile(fullPath:string):Mp.MediaFile{
 
         const statInfo = fs.statSync(fullPath);
@@ -63,12 +97,15 @@ export default class Util{
             name:decodeURIComponent(encodeURIComponent(path.basename(fullPath))),
             date:statInfo.mtimeMs,
             extension:path.extname(fullPath),
+            tag:this.getTag(fullPath),
         }
     }
 
     updateFile(fullPath:string, currentFile:Mp.MediaFile):Mp.MediaFile{
 
         const encodedPath = path.join(path.dirname(fullPath), encodeURIComponent(path.basename(fullPath)))
+
+        this.setTag(fullPath, currentFile.tag ?? "")
 
         return {
             id: currentFile.id,
@@ -78,6 +115,7 @@ export default class Util{
             name:decodeURIComponent(encodeURIComponent(path.basename(fullPath))),
             date:currentFile.date,
             extension:currentFile.extension,
+            tag:currentFile.tag,
         }
     }
 
@@ -140,7 +178,7 @@ export default class Util{
 
     }
 
-    getMediaMetadata(fullPath:string):Promise<Mp.FfprobeData>{
+    async getMediaMetadata(fullPath:string):Promise<Mp.FfprobeData>{
 
         return new Promise((resolve,reject)=>{
             ffmpeg.ffprobe(fullPath, async (error:any, FfprobeData:ffmpeg.FfprobeData) => {
@@ -324,3 +362,7 @@ export default class Util{
 
     }
 }
+
+const util = new Util();
+
+export default util

@@ -1,6 +1,6 @@
 import fs from "fs"
 import path from "path";
-import Util from "./util";
+import util from "./util";
 
 const CONFIG_FILE_NAME = "mediaplayer.config.json"
 
@@ -38,19 +38,18 @@ export default class Config{
     data:Mp.Config;
 
     private file:string;
-    private util = new Util();
 
     constructor(workingDirectory:string){
         this.data = defaultConfig;
         const directory = process.env.NODE_ENV === "development" ? path.join(__dirname, "..", "..", "temp") : path.join(workingDirectory, "temp");
-        this.util.exists(directory, true);
+        util.exists(directory, true);
         this.file = path.join(directory, CONFIG_FILE_NAME)
         this.init();
     }
 
     private init(){
 
-        const fileExists = this.util.exists(this.file, false);
+        const fileExists = util.exists(this.file, false);
 
         if(fileExists){
 
@@ -74,7 +73,7 @@ export default class Config{
 
             const value = rawConfig[key];
 
-            if(typeof value === "object"){
+            if(typeof value === "object" && !Array.isArray(value)){
 
                 Object.keys(value).forEach(valueKey => {
                     if(valueKey in config[key]){

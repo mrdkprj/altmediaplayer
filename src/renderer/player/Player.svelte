@@ -504,9 +504,9 @@
 <svelte:window on:keydown={onKeydown} on:resize={onResize}/>
 <svelte:document on:mousemove={onMousemove}/>
 
-<div class="viewport" class:full-screen={$appState.isFullScreen} class:loaded={$appState.loaded} class:autohide={$appState.autohide}>
+<div class="player-viewport" class:full-screen={$appState.isFullScreen} class:loaded={$appState.loaded} class:autohide={$appState.autohide}>
 
-    <div class="title-bar">
+    <div class="player-title-bar">
         <div class="icon-area">
             <img class="ico" src={icon} alt=""/>
             <span>{APP_NAME}</span>

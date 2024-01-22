@@ -54,7 +54,7 @@ export const initialAppState : AppState = {
         gainNode:null,
         playbackSpeed:0,
         seekSpeed:0
-    }
+    },
 }
 
 const updater = (state: AppState, action: AppAction): AppState => {

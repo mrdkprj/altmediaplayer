@@ -6,7 +6,7 @@ declare global {
         api: Api;
     }
 
-    type RendererName = "Player" | "Playlist" | "Convert"
+    type RendererName = "Player" | "Playlist" | "Convert" | "Tag"
     type Renderer = {[key in RendererName] : Electron.BrowserWindow | null}
 
     type MainChannelEventMap = {
@@ -36,6 +36,8 @@ declare global {
         "rename-ready": Mp.RenameRequest;
         "playlist-item-selection-change": Mp.PlaylistItemSelectionChange;
         "open-sort-context": Mp.Position;
+        "close-tag": Mp.Event;
+        "save-tags": Mp.SaveTagsEvent;
         "error": Mp.ErrorEvent;
     }
 
@@ -64,6 +66,7 @@ declare global {
         "open-convert": Mp.OpenConvertDialogEvent;
         "after-convert": Mp.Event;
         "picture-in-picture":Mp.Event;
+        "open-tag-editor":Mp.OpenTagEditorEvent;
     }
 
     interface Api {
@@ -78,14 +81,42 @@ declare global {
         type Theme = "dark" | "light";
         type ConvertFormat = "MP4" | "MP3"
         type ThumbButtonType = "Play" | "Pause" | "Previous" | "Next"
-        type PlayerContextMenuType = "PlaybackSpeed" | "SeekSpeed" | "TogglePlaylistWindow" | "FitToWindow" | "ToggleFullscreen" | "Theme" | "Capture" | "PictureInPicture"
-        type PlaylistContextMenuType = "Remove" | "RemoveAll" | "Trash" | "CopyFileName" | "CopyFullpath" | "Reveal" | "Metadata" | "Convert" | "Sort" | "Rename" | "LoadList" | "SaveList" | "GroupBy"
         type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2;
         type SeekSpeed = 0.03 | 0.05 | 0.1 | 0.5 | 1 | 3 | 5 | 10 | 20;
         type SortOrder = "NameAsc" | "NameDesc" | "DateAsc" | "DateDesc"
         type FileDialogType = "Read" | "Write";
 
-        type ContextMenuSubType = PlaybackSpeed | SeekSpeed | SortOrder | Theme | FileDialogType
+        type PlayerContextMenuSubTypeMap = {
+            "PlaybackSpeed": Mp.PlaybackSpeed;
+            "SeekSpeed": Mp.SeekSpeed;
+            "TogglePlaylistWindow": null;
+            "FitToWindow": null;
+            "ToggleFullscreen": null;
+            "Theme": Mp.Theme;
+            "Capture": null;
+            "PictureInPicture": null;
+        }
+
+        type PlaylistContextMenuSubTypeMap = {
+            "Remove": null;
+            "RemoveAll": null;
+            "Trash": null;
+            "CopyFileName": null;
+            "CopyFullpath": null;
+            "Reveal": null;
+            "Metadata": null;
+            "Convert": null;
+            "Tag": string;
+            "ManageTags":null;
+            "Sort": Mp.SortOrder;
+            "Rename": null;
+            "LoadList": FileDialogType;
+            "SaveList": FileDialogType;
+            "GroupBy": null;
+        };
+
+        type PlayerContextMenuCallback<K extends keyof PlayerContextMenuSubTypeMap> = (menu:K, args?:Mp.PlayerContextMenuSubTypeMap[K]) => void
+        type PlaylistContextMenuCallback<K extends keyof PlaylistContextMenuSubTypeMap> = (menu:K, args?:Mp.PlaylistContextMenuSubTypeMap[K]) => void
 
         type VideoFrameSize = "SizeNone" | "360p" | "480p" | "720p" | "1080p";
         type VideoRotation = "RotationNone" | "90Clockwise" | "90CounterClockwise"
@@ -100,7 +131,7 @@ declare global {
 
         type ShortcutEvent = {
             renderer:RendererName;
-            menu: PlayerContextMenuType | PlaylistContextMenuType
+            menu: keyof PlayerContextMenuSubTypeMap | keyof PlaylistContextMenuSubTypeMap
         }
 
         type Bounds = {
@@ -154,6 +185,7 @@ declare global {
             name:string;
             date:number;
             extension:string;
+            tag:string | undefined;
         }
 
         type MediaState = {
@@ -224,8 +256,6 @@ declare global {
             files:string[];
             renderer:RendererName;
         }
-
-        type PlaylistChangeEventType = "Move" | "Append";
 
         type PlaylistChangeEvent = {
             files:MediaFile[];
@@ -304,6 +334,14 @@ declare global {
         type RenameResult = {
             file:MediaFile;
             error?:boolean;
+        }
+
+        type OpenTagEditorEvent = {
+            tags:string[];
+        }
+
+        type SaveTagsEvent = {
+            tags:string[];
         }
 
         type OpenConvertDialogEvent = {
@@ -391,6 +429,8 @@ declare global {
             cancel:string;
             close:string;
             mute:string;
+            tags:string;
+            manageTag:string;
         }
 
     }

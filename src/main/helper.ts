@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, nativeImage } from "electron"
+import { BrowserWindow, Menu, MenuItem, nativeImage } from "electron"
 import path from "path"
 import { translation } from "../translation/translation";
 import icon from "../assets/icon.ico"
@@ -6,6 +6,7 @@ import play from "../assets/play.png"
 import pause from "../assets/pause.png"
 import forward from "../assets/forward.png"
 import backward from "../assets/backward.png"
+import util from "./util";
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -18,6 +19,8 @@ const load = (window:BrowserWindow, name:RendererName) => {
     return window.loadFile(path.join(__dirname, `../renderer/${name.toLowerCase()}/index.html`))
 
 }
+
+export const ADD_TAG_MENU_Id = "addTag"
 
 export default class Helper{
 
@@ -107,7 +110,34 @@ export default class Helper{
         return window;
     }
 
-    createPlayerContextMenu(onclick: (menu:Mp.PlayerContextMenuType, args?:any) => void){
+    createTagEditorWindow(parent:BrowserWindow){
+
+        const window = new BrowserWindow({
+            parent,
+            width:400,
+            height:600,
+            minHeight: 250,
+            resizable: true,
+            autoHideMenuBar: true,
+            show: false,
+            frame:false,
+            modal:false,
+            minimizable: false,
+            maximizable: false,
+            fullscreenable:false,
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true,
+                preload: path.join(__dirname, "../preload/preload.js"),
+            },
+        })
+
+        load(window, "Tag")
+
+        return window;
+    }
+
+    createPlayerContextMenu(onclick: Mp.PlayerContextMenuCallback<keyof Mp.PlayerContextMenuSubTypeMap>){
 
         const template:Electron.MenuItemConstructorOptions[] = [
             {
@@ -156,7 +186,7 @@ export default class Helper{
         return Menu.buildFromTemplate(template)
     }
 
-    private themeMenu(onclick: (menu:Mp.PlayerContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    private themeMenu(onclick: Mp.PlayerContextMenuCallback<"Theme">){
         const type = "Theme"
         const template:Electron.MenuItemConstructorOptions[] = [
             {
@@ -178,7 +208,7 @@ export default class Helper{
         return Menu.buildFromTemplate(template);
     }
 
-    private playbackSpeedMenu(onclick: (menu:Mp.PlayerContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    private playbackSpeedMenu(onclick: Mp.PlayerContextMenuCallback<"PlaybackSpeed">){
 
         const type = "PlaybackSpeed"
         const template:Electron.MenuItemConstructorOptions[] = [
@@ -236,7 +266,7 @@ export default class Helper{
         return Menu.buildFromTemplate(template);
     }
 
-    private seekSpeedMenu(onclick: (menu:Mp.PlayerContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    private seekSpeedMenu(onclick: Mp.PlayerContextMenuCallback<"SeekSpeed">){
 
         const type = "SeekSpeed"
         const template:Electron.MenuItemConstructorOptions[] = [
@@ -300,7 +330,7 @@ export default class Helper{
         return Menu.buildFromTemplate(template);
     }
 
-    createPlaylistContextMenu(onclick: (menu:Mp.PlaylistContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    createPlaylistContextMenu(onclick: Mp.PlaylistContextMenuCallback<keyof Mp.PlaylistContextMenuSubTypeMap>){
 
         const template:Electron.MenuItemConstructorOptions[] = [
             {
@@ -343,11 +373,16 @@ export default class Helper{
                 label: this.t("convert"),
                 click: () => onclick("Convert")
             },
-            // { type: "separator" },
-            // {
-            //     label:"Tag":
-            //     submenu:this.createTagContextMenu(onclick)
-            // }
+            { type: "separator" },
+            {
+                id:ADD_TAG_MENU_Id,
+                label: this.t("tags"),
+                submenu:this.createTagContextMenu(onclick)
+            },
+            {
+                label: this.t("manageTag"),
+                click: () => onclick("ManageTags")
+            },
             { type: "separator" },
             {
                 label: this.t("loadList"),
@@ -367,17 +402,77 @@ export default class Helper{
         return Menu.buildFromTemplate(template);
     }
 
-    createTagContextMenu(onclick: (menu:Mp.PlaylistContextMenuType, args?:Mp.ContextMenuSubType) => void){
-        const template:Electron.MenuItemConstructorOptions[] = this.config.tags.map(tag => {
+    private createTagContextMenu(onclick: Mp.PlaylistContextMenuCallback<"Tag">){
+        const template:Electron.MenuItemConstructorOptions[] = this.config.tags.sort().map(tag => {
                 return {
+                    id:tag,
                     label: tag,
-                    click: () => onclick("RemoveAll")
+                    type:"checkbox",
+                    click: () => onclick("Tag", tag)
                 }
-            })
+        })
         return Menu.buildFromTemplate(template);
     }
 
-    createPlaylistSortContextMenu(onclick: (menu:Mp.PlaylistContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    refreshTagContextMenu(parent:Electron.Menu, tags:string[], onclick: Mp.PlaylistContextMenuCallback<"Tag">){
+
+        const menu = parent.getMenuItemById(ADD_TAG_MENU_Id);
+
+        if(menu && menu.submenu){
+            const menuItemMap = menu.submenu.items.reduce((obj:{[key:string]:Electron.MenuItem}, item) => (obj[item.id] = item, obj), {})
+            const keys = [...new Set([...tags,...Object.keys(menuItemMap)])].sort()
+
+            keys.forEach((key,index) => {
+
+                if(menuItemMap[key] && tags.includes(key)){
+                    menuItemMap[key].enabled = true;
+                }
+
+                if(menuItemMap[key] && !tags.includes(key)){
+                    menuItemMap[key].enabled = false;
+                }
+
+                if(!menuItemMap[key] && tags.includes(key)){
+                    const item = new MenuItem({
+                        id:key,
+                        label: key,
+                        type:"checkbox",
+                        click: () => onclick("Tag", key)
+                    })
+                    menu.submenu?.insert(index, item)
+                }
+
+            })
+
+        }
+
+    }
+
+    toggleTagContextMenu(parent:Electron.Menu, enable:boolean, selectedFile:Mp.MediaFile | undefined){
+
+        const menu = parent.getMenuItemById(ADD_TAG_MENU_Id);
+
+        if(menu){
+
+            menu.enabled = enable
+
+            if(!selectedFile) return
+
+            const tag = util.getTag(selectedFile.fullPath)
+
+            menu.submenu?.items.forEach(menu => {
+
+                if(menu.id == tag){
+                    menu.checked = true;
+                }else{
+                    menu.checked = false;
+                }
+            })
+
+        }
+    }
+
+    createPlaylistSortContextMenu(onclick: Mp.PlaylistContextMenuCallback<"Sort" | "GroupBy">){
 
         const type = "Sort"
         const toggleExcepts = ["groupby"]

@@ -26,7 +26,6 @@ type AppState = {
     shuffle:boolean;
     sortType:Mp.SortType;
     files:Mp.MediaFile[];
-    updateType: Mp.PlaylistChangeEventType;
     preventBlur:boolean;
     rename:RenameState;
     dragState:DragState;
@@ -38,7 +37,6 @@ export const initialAppState : AppState = {
     shuffle:false,
     sortType:{order:"NameAsc", groupBy:false},
     files:[],
-    updateType:"Append",
     preventBlur:false,
     rename:{
         renaming:false,
@@ -68,7 +66,7 @@ type AppAction =
 | {type: "updatSelectedIds", value:string[]}
 | {type: "updateSelection", value:Mp.PlaylistItemSelection}
 | {type: "sortType", value:Mp.SortType}
-| {type: "files", value:{files:Mp.MediaFile[], type:Mp.PlaylistChangeEventType}}
+| {type: "files", value:Mp.MediaFile[]}
 | {type: "startRename", value:{rect:RenamePartialRect, value:string}}
 | {type: "endRename"}
 | {type: "preventBlur", value: boolean}
@@ -89,7 +87,6 @@ const updater = (state:AppState, action:AppAction) => {
             return {...state,
                 playlingItemId: "",
                 files:[],
-                updateType:"Append" as Mp.PlaylistChangeEventType,
                 selection:{...state.selection, selectedId:"", selectedIds:[]},
             }
 
@@ -118,7 +115,7 @@ const updater = (state:AppState, action:AppAction) => {
             return {...state, sortType:action.value}
 
         case "files":
-            return {...state, files:action.value.files, updateType:action.value.type}
+            return {...state, files:action.value}
 
         case "startRename":
             return {...state, rename:{...state.rename, renaming:true, rect:action.value.rect, inputValue:action.value.value}}

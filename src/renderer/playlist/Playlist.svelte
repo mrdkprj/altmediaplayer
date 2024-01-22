@@ -70,10 +70,8 @@
     }
 
     const clearSelection = () => {
-
         dispatch({type:"clearSelection"})
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
-
+        sendSelection()
     }
 
     const getChildIndex = (id:string | null | undefined) => {
@@ -105,7 +103,7 @@
 
         clearSelection();
 
-        dispatch({type:"files", value:{files:data.files, type:"Append"}})
+        dispatch({type:"files", value:data.files})
 
         if(shouldRestoreSelection && $appState.files.length){
             const nextId = selectedIndex > $appState.files.length - 1 ? $appState.files[selectedIndex - 1].id : $appState.files[selectedIndex].id
@@ -140,7 +138,7 @@
 
         scrollToElement(id)
 
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+        sendSelection()
 
     }
 
@@ -171,7 +169,7 @@
 
         dispatch({type:"setSelectedIds", value:ids})
 
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+        sendSelection()
 
     }
 
@@ -184,7 +182,7 @@
 
         dispatch({type:"updatSelectedIds", value:[id]})
 
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+        sendSelection()
     }
 
     const selectAll = () => {
@@ -195,7 +193,7 @@
 
         dispatch({type:"updatSelectedIds", value:ids})
 
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+        sendSelection()
 
     }
 
@@ -253,9 +251,15 @@
 
     }
 
+    const sendSelection = () => {
+        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+    }
+
     const changeCurrent = (e:Mp.FileLoadEvent) => {
         dispatch({type:"playlingItemId", value:e.currentFile.id})
-        select(e.currentFile.id)
+        if(e.currentFile.id){
+            select(e.currentFile.id)
+        }
     }
 
     const setInputFocus = (node:HTMLInputElement) => {
@@ -373,7 +377,7 @@
     }
 
     const addToPlaylist = (e:Mp.PlaylistChangeEvent) => {
-        dispatch({type:"files", value:{files:e.files, type:e.type}})
+        dispatch({type:"files", value:e.files})
     }
 
     const applySortType = (sortType:Mp.SortType) => {
@@ -452,9 +456,9 @@
 
 <svelte:window on:contextmenu={onContextMenu} on:keydown={onKeydown}/>
 
-<div class="playlist">
-    <div class="playlist-title-bar">
-        <div class="playlist-close-btn" on:click={close} on:keydown={handleKeyEvent} role="button" tabindex="-1">&times;</div>
+<div class="viewport">
+    <div class="title-bar">
+        <div class="close-btn" on:click={close} on:keydown={handleKeyEvent} role="button" tabindex="-1">&times;</div>
     </div>
     <div class="playlist-viewport" class:group-by={$appState.sortType.groupBy} bind:this={fileListContainer} role="button" tabindex="-1" on:drop={onFileDrop} on:dragover={e => e.preventDefault()}>
         {#if $appState.rename.renaming}

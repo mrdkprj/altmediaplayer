@@ -45,4 +45,6 @@ export const ja:Mp.label = {
     cancel:"Cancel",
     close:"Close",
     mute:"ミュート",
+    tags:"コメントにタグを追加",
+    manageTag:"タグを管理",
 }

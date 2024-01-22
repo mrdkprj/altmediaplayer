@@ -45,4 +45,6 @@ export const en:Mp.label = {
     cancel:"Cancel",
     close:"Close",
     mute:"Mute",
+    tags:"Add Tag To Comment",
+    manageTag:"Manage Tags",
 }

@@ -122,9 +122,9 @@
 
 <svelte:window on:keydown={onKeydown} />
 
-<div class="convert">
-    <div class="convert-title-bar">
-        <div class="convert-close-btn" on:click={closeDialog} on:keydown={onKeydown} role="button" tabindex="-1">&times;</div>
+<div class="viewport">
+    <div class="title-bar">
+        <div class="close-btn" on:click={closeDialog} on:keydown={onKeydown} role="button" tabindex="-1">&times;</div>
     </div>
     <div class="convert-viewport">
         <div class="container">

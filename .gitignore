@@ -21,8 +21,8 @@ jspm_packages/
 out/
 
 #ffmpeg
-/resources/*
-!/resources/.keep
+/resources/ffmpeg.exe
+/resources/ffprobe.exe
 
 #temp
 temp/

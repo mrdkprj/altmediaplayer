@@ -2,10 +2,9 @@ import {app, ipcMain, clipboard, dialog, shell, protocol, nativeTheme} from "ele
 
 import fs from "fs";
 import path from "path";
-import proc from "child_process";
 import url from "url"
 import Helper from "./helper";
-import Util from "./util";
+import util from "./util";
 import Config from "./config";
 import { EmptyFile, FORWARD, BACKWARD, VideoFormats, AudioExtentions, AudioFormats } from "../constants";
 
@@ -19,7 +18,6 @@ protocol.registerSchemesAsPrivileged([
     { scheme: "app", privileges: { bypassCSP: true } },
 ])
 
-const util = new Util();
 const config = new Config(app.getPath("userData"));
 const helper = new Helper(config.data);
 
@@ -27,6 +25,7 @@ const Renderers:Renderer = {
     Player:null,
     Playlist:null,
     Convert:null,
+    Tag:null,
 }
 
 const playlistFiles:Mp.MediaFile[] = []
@@ -62,7 +61,7 @@ const thumbButtonCallback = (button:Mp.ThumbButtonType) => {
 
 const thumButtons = helper.createThumButtons(thumbButtonCallback)
 
-const playerContextMenuCallback = (menu:Mp.PlayerContextMenuType, args?:Mp.ContextMenuSubType) => {
+const playerContextMenuCallback = (menu:keyof Mp.PlayerContextMenuSubTypeMap, args?:Mp.PlayerContextMenuSubTypeMap[keyof Mp.PlayerContextMenuSubTypeMap]) => {
     switch(menu){
         case "PlaybackSpeed":
             changePlaybackSpeed(Number(args));
@@ -93,7 +92,7 @@ const playerContextMenuCallback = (menu:Mp.PlayerContextMenuType, args?:Mp.Conte
 
  const playerMenu = helper.createPlayerContextMenu(playerContextMenuCallback)
 
-const playlistContextMenuCallback = (menu:Mp.PlaylistContextMenuType, args?:Mp.ContextMenuSubType) => {
+const playlistContextMenuCallback = (menu:keyof Mp.PlaylistContextMenuSubTypeMap, args?:Mp.PlaylistContextMenuSubTypeMap[keyof Mp.PlaylistContextMenuSubTypeMap]) => {
 
     switch(menu){
         case "Remove":
@@ -118,7 +117,7 @@ const playlistContextMenuCallback = (menu:Mp.PlaylistContextMenuType, args?:Mp.C
             displayMetadata();
             break;
         case "Convert":
-            openConvertDialog();
+            openConvert();
             break;
         case "Sort":
             changeSortOrder(args as Mp.SortOrder);
@@ -134,6 +133,12 @@ const playlistContextMenuCallback = (menu:Mp.PlaylistContextMenuType, args?:Mp.C
             break;
         case "GroupBy":
             toggleGroupBy();
+            break;
+        case "Tag":
+            addTagToFile(args ?? "");
+            break;
+        case "ManageTags":
+            openTagEditor();
             break;
     }
 }
@@ -173,7 +178,7 @@ const afterSecondInstance = () => {
     }
 }
 
-app.on("second-instance", (_event:Event, _argv:string[], _workingDirectory:string, additionalData:string[]) => {
+app.on("second-instance", (_event:Electron.Event, _argv:string[], _workingDirectory:string, additionalData:any) => {
 
     if(!secondInstanceState.timeout){
         setSecondInstanceTimeout();
@@ -213,6 +218,7 @@ app.on("ready", () => {
     Renderers.Player = helper.createPlayerWindow();
     Renderers.Playlist = helper.createPlaylistWindow(Renderers.Player)
     Renderers.Convert = helper.createConvertWindow(Renderers.Player)
+    Renderers.Tag = helper.createTagEditorWindow(Renderers.Player)
 
     Renderers.Player.on("ready-to-show", () => {
 
@@ -276,6 +282,8 @@ const initPlaylist = (fullPaths:string[]) => {
 
     if(!playlistFiles.length) return;
 
+    delayApplyTags(fullPaths, false)
+
     currentIndex = 0;
 
     sortPlayList();
@@ -292,6 +300,8 @@ const addToPlaylist = (fullPaths:string[]) => {
 
     playlistFiles.push(...newFiles)
 
+    delayApplyTags(newFiles.map(file => file.fullPath), true)
+
     sortPlayList();
 
     shuffleList();
@@ -301,6 +311,16 @@ const addToPlaylist = (fullPaths:string[]) => {
         loadMediaFile(false);
     }
 
+}
+
+// Dont use await
+const delayApplyTags = async (fullPaths:string[], append:boolean) => {
+    const tags = await util.retrieveTags(fullPaths, append)
+
+    playlistFiles.filter(file => file.fullPath in tags).forEach(file => {
+        const tag = tags[file.fullPath]
+        file.tag = tag;
+    })
 }
 
 const getCurrentFile = () => {
@@ -316,6 +336,8 @@ const getCurrentFile = () => {
 const reset = () => {
     playlistFiles.length = 0;
     randomIndices.length = 0;
+    playlistSelection.selectedId = "";
+    playlistSelection.selectedIds = []
     currentIndex = -1;
     respond("Playlist", "clear-playlist", {})
 }
@@ -371,8 +393,10 @@ const saveConfig = (data:Mp.MediaState) => {
     }
 }
 
-const closeWindow = (data:Mp.CloseRequest) => {
+const closeWindow = async (data:Mp.CloseRequest) => {
     saveConfig(data.mediaState);
+    await util.exit();
+    Renderers.Tag?.close();
     Renderers.Playlist?.close();
     Renderers.Player?.close();
 }
@@ -466,10 +490,8 @@ const changePlaylistItemOrder = (data:Mp.ChangePlaylistOrderRequet) => {
 }
 
 const clearPlaylist = () => {
-
     reset();
     loadMediaFile(false);
-
 }
 
 const removeFromPlaylist = (selectedIds:string[]) => {
@@ -551,7 +573,8 @@ const reveal = () => {
 
     if(!file) return;
 
-    proc.exec(`explorer /e,/select,${file.fullPath}`);
+    shell.showItemInFolder(file.fullPath)
+
 }
 
 const copyFileNameToClipboard = (fullPath:boolean) => {
@@ -602,19 +625,6 @@ const sortPlayList = () => {
 
 }
 
-const displayMetadata = async () => {
-
-    const file = playlistFiles.find(file => file.id == playlistSelection.selectedId)
-    if(!file || !Renderers.Player) return;
-
-    const metadata = await util.getMediaMetadata(file.fullPath)
-    const metadataString = JSON.stringify(metadata, undefined, 2);
-    const result = await dialog.showMessageBox(Renderers.Player, {type:"info", message:metadataString,  buttons:["Copy", "OK"], noLink:true})
-    if(result.response === 0){
-        clipboard.writeText(metadataString);
-    }
-}
-
 const togglePlaylistWindow = () => {
 
     config.data.playlistVisible = !config.data.playlistVisible;
@@ -626,7 +636,7 @@ const togglePlaylistWindow = () => {
 
 }
 
-const openConvertDialog = () => {
+const openConvert = () => {
     const file = playlistFiles.find(file => file.id == playlistSelection.selectedId) ?? EmptyFile
     respond("Convert", "open-convert", {file})
     Renderers.Convert?.show();
@@ -744,7 +754,7 @@ const startConvert = async (data:Mp.ConvertRequest) => {
 
     }finally{
 
-        openConvertDialog();
+        openConvert();
         respond("Player", "toggle-convert", {})
 
     }
@@ -758,6 +768,50 @@ const endConvert = (message?:string) => {
     }
 
     respond("Convert", "after-convert", {})
+
+}
+
+const displayMetadata = async () => {
+
+    const file = playlistFiles.find(file => file.id == playlistSelection.selectedId)
+    if(!file || !Renderers.Player) return;
+
+    const metadata = await util.getMediaMetadata(file.fullPath)
+    const metadataString = JSON.stringify(metadata, undefined, 2);
+    const result = await dialog.showMessageBox(Renderers.Player, {type:"info", message:metadataString,  buttons:["Copy", "OK"], noLink:true})
+    if(result.response === 0){
+        clipboard.writeText(metadataString);
+    }
+}
+
+const openTagEditor = () => {
+    respond("Tag", "open-tag-editor", {tags:config.data.tags})
+    Renderers.Tag?.show();
+}
+
+const saveTags = (e:Mp.SaveTagsEvent) => {
+    config.data.tags = e.tags;
+    helper.refreshTagContextMenu(playlistMenu, e.tags, playlistContextMenuCallback)
+}
+
+const closeTagEditor = () => Renderers.Tag?.hide();
+
+const addTagToFile = async (tag:string) => {
+    const file = playlistFiles.find(file => file.id == playlistSelection.selectedId)
+    if(file){
+        try{
+            await util.writeTag(file.fullPath, tag)
+        }catch(ex:any){
+            showErrorMessage(ex)
+        }
+    }
+}
+
+const toggleCommentMenu = () => {
+
+    const file = playlistFiles.find(file => file.id == playlistSelection.selectedIds[0])
+
+    helper.toggleTagContextMenu(playlistMenu, playlistSelection.selectedIds.length == 1, file)
 
 }
 
@@ -810,7 +864,6 @@ const fromPlaylistJson = (jsonData:string) => {
     }catch(ex:any){
         showErrorMessage(ex);
     }
-
 }
 
 const beforeRename = async (data:Mp.RenameRequest) => {
@@ -872,7 +925,10 @@ const onPlaylistItemSelectionChange = (data:Mp.PlaylistItemSelectionChange) => {
     playlistSelection.selectedIds = data.selection.selectedIds
 }
 
-const onOpenPlaylistContext = () => playlistMenu.popup({window:Renderers.Playlist ?? undefined})
+const onOpenPlaylistContext = () => {
+    toggleCommentMenu();
+    playlistMenu.popup({window:Renderers.Playlist ?? undefined})
+}
 
 const onToggleShuffle = () => {
     doShuffle = !doShuffle;
@@ -894,11 +950,11 @@ const onToggleFullscreen = (e:Mp.FullscreenChange) => {
 
 const onShortcut = (e:Mp.ShortcutEvent) => {
     if(e.renderer === "Player"){
-        playerContextMenuCallback(e.menu as Mp.PlayerContextMenuType)
+        playerContextMenuCallback(e.menu as keyof Mp.PlayerContextMenuSubTypeMap)
     }
 
     if(e.renderer === "Playlist"){
-        playlistContextMenuCallback(e.menu as Mp.PlaylistContextMenuType)
+        playlistContextMenuCallback(e.menu as keyof Mp.PlaylistContextMenuSubTypeMap)
     }
 }
 
@@ -937,4 +993,6 @@ const registerIpcChannels = () => {
     addEventHandler("request-cancel-convert", util.cancelConvert)
     addEventHandler("open-convert-sourcefile-dialog", openConvertSourceFileDialog)
     addEventHandler("shortcut", onShortcut)
+    addEventHandler("save-tags", saveTags)
+    addEventHandler("close-tag", closeTagEditor)
 }
