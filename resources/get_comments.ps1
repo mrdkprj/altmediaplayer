@@ -1,8 +1,8 @@
 $tags = @{}
 
-foreach($file in $args){
+$folder = (New-Object -ComObject Shell.Application).NameSpace((Split-Path $args[0]))
 
-  $folder = (New-Object -ComObject Shell.Application).NameSpace((Split-Path $file))
+foreach($file in $args){
 
   # Output the value of the "Comments" property.
   $tag = $folder.GetDetailsOf(

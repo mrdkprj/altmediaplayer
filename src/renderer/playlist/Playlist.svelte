@@ -2,6 +2,7 @@
 
     import { onMount } from "svelte";
     import List from "./List.svelte";
+    import { getDropFiles } from "../fileDropHandler";
     import { handleShortcut } from "../shortcut"
     import { handleKeyEvent } from "../../constants";
     import { appState, dispatch } from "./appStateReducer";
@@ -50,17 +51,9 @@
 
         if($appState.dragState.dragging) return;
 
-        e.preventDefault();
-        e.stopPropagation();
+        const files = getDropFiles(e)
 
-        const items = e.dataTransfer ? e.dataTransfer.items : []
-
-        const dropItems = Array.from(items).filter(item => {
-            return item.kind === "file" && (item.type.includes("video") || item.type.includes("audio"));
-        })
-
-        if(dropItems.length){
-            const files = dropItems.map(item => item.getAsFile()?.path ?? "")
+        if(files.length){
             window.api.send("drop", {files, renderer:"Playlist"})
         }
     }

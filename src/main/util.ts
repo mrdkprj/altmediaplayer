@@ -58,6 +58,8 @@ class Util{
 
     async retrieveTags(fullPaths:string[], append:boolean){
 
+        if(!fullPaths.length) return {};
+
         const tags = await getAllComments(fullPaths)
 
         if(append){

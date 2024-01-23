@@ -26,6 +26,7 @@ export const getComment = async (fullPath:string) => {
 export const getAllComments = async (fullPaths:string[]):Promise<{[key:string]:string}> => {
 
     const args = fullPaths.map(fullPath => `"${fullPath}"`).join(" ")
+
     const child = spawn("powershell.exe",[path.join(resourcePath, "get_comments.ps1"), args]);
     let data = "";
     for await (const chunk of child.stdout) {

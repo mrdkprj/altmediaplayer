@@ -5,6 +5,7 @@
     import { useTranslation } from "../../translation/useTranslation"
 
     import { FORWARD, BACKWARD, APP_NAME, handleKeyEvent } from "../../constants";
+    import { getDropFiles } from "../fileDropHandler";
     import { handleShortcut } from "../shortcut";
     import Footer from "./Footer.svelte";
     import icon from "../../assets/icon.ico"
@@ -12,6 +13,7 @@
     let video:HTMLVideoElement
     let container:HTMLDivElement
     let hideControlTimeout:number | null
+    let afterReleaseCallback:(() => void) | undefined;
     let lang:Mp.Lang = "en";
 
     const Buttons = {
@@ -82,47 +84,16 @@
 
     const onFileDrop = (e:DragEvent) => {
 
-        e.preventDefault();
+        const files = getDropFiles(e)
 
-        const items = e.dataTransfer ? e.dataTransfer.items : []
-
-        const dropItems = Array.from(items).filter(item => {
-            return item.kind === "file" && (item.type.includes("video") || item.type.includes("audio"));
-        })
-
-        if(dropItems.length){
-            const files = dropItems.map(item => item.getAsFile()?.path ?? "")
+        if(files.length){
             window.api.send("drop", {files, renderer:"Player"})
         }
     }
 
     const initPlayer = () => {
-
-        dispatch({type:"currentFile", value:null})
-        dispatch({type:"videoDuration", value:0})
-        dispatch({type:"playing", value:false})
-        dispatch({type:"currentTime", value:0})
-        dispatch({type:"loaded", value:false})
+        dispatch({type:"init"})
         video.load();
-
-    }
-
-    const beforeDelete = (data:Mp.TrashRequest) => {
-
-        if(data.fileIds.includes($appState.currentFile.id)){
-            dispatch({type:"currentFile", value:null})
-        }
-        window.api.send("trash-ready", {fileIds:data.fileIds})
-
-    };
-
-    const beforeRename = (data:Mp.RenameRequest) => {
-
-        if($appState.currentFile.id == data.id){
-            data.currentTime = $appState.media.currentTime;
-            dispatch({type:"currentFile", value:null})
-        }
-        window.api.send("rename-ready", data)
     }
 
     const loadMedia = (e:Mp.FileLoadEvent) => {
@@ -154,6 +125,35 @@
         }
 
         video.autoplay = false;
+
+    }
+
+    const onEmptied = () => {
+
+        if(!afterReleaseCallback) return
+
+        afterReleaseCallback();
+        afterReleaseCallback = undefined;
+
+    }
+
+    const beforeDelete = (data:Mp.TrashRequest) => {
+
+        if(data.fileIds.includes($appState.currentFile.id)){
+            initPlayer();
+        }
+        afterReleaseCallback = () => window.api.send("trash-ready", {fileIds:data.fileIds})
+
+    };
+
+    const beforeRename = (data:Mp.RenameRequest) => {
+
+        if($appState.currentFile.id == data.id){
+            data.currentTime = $appState.media.currentTime;
+            initPlayer();
+        }
+
+        afterReleaseCallback = () => window.api.send("rename-ready", data)
 
     }
 
@@ -193,11 +193,11 @@
 
         if(!$appState.loaded) return;
 
-        if(button === 0){
+        if(button === Buttons.right){
             changeCurrentTime($appState.media.seekSpeed);
         }
 
-        if(button === 2){
+        if(button === Buttons.left){
             changeFile(FORWARD)
         }
 
@@ -207,18 +207,18 @@
 
         if(!$appState.loaded) return;
 
-        if(button === 0){
+        if(button === Buttons.right){
             changeCurrentTime(-$appState.media.seekSpeed)
         }
 
-        if(button === 2){
+        if(button === Buttons.left){
             changeFile(BACKWARD)
         }
 
     }
 
     const changeFile = (index:number) => {
-        return window.api.send("load-file", {index, isAbsolute:false})
+        window.api.send("load-file", {index, isAbsolute:false})
     }
 
     const togglePlay = () => {
@@ -532,6 +532,7 @@
             on:play={onPlayed}
             on:pause={onPaused}
             on:contextmenu={onContextMenu}
+            on:emptied={onEmptied}
             muted={$appState.media.mute}
         />
     </div>

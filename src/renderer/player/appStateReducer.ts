@@ -15,8 +15,9 @@ type AppState = {
 }
 
 type AppAction =
+| { type: "init"}
 | { type: "loaded", value: boolean}
-| { type: "currentFile", value: Mp.MediaFile | null}
+| { type: "currentFile", value: Mp.MediaFile}
 | { type: "isMaximized", value: boolean}
 | { type: "isFullScreen", value: boolean}
 | { type: "playing", value: boolean}
@@ -61,13 +62,21 @@ const updater = (state: AppState, action: AppAction): AppState => {
 
     switch (action.type) {
 
+        case "init":
+            return {...state,
+                playing:false,
+                loaded:false,
+                currentFile:EmptyFile,
+                media:{...state.media,
+                    currentTime:0,
+                    videoDuration:0,
+                },
+            };
+
         case "loaded":
             return {...state, loaded:action.value}
 
         case "currentFile": {
-            if(!action.value){
-                return {...state, currentFile:EmptyFile, loaded:false};
-            }
 
             if(action.value.src){
                 return {...state, currentFile:action.value, loaded:true};

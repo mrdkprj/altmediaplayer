@@ -1,5 +1,4 @@
 import {app, ipcMain, clipboard, dialog, shell, protocol, nativeTheme} from "electron";
-
 import fs from "fs";
 import path from "path";
 import url from "url"
@@ -90,7 +89,7 @@ const playerContextMenuCallback = (menu:keyof Mp.PlayerContextMenuSubTypeMap, ar
     }
 }
 
- const playerMenu = helper.createPlayerContextMenu(playerContextMenuCallback)
+const playerMenu = helper.createPlayerContextMenu(playerContextMenuCallback)
 
 const playlistContextMenuCallback = (menu:keyof Mp.PlaylistContextMenuSubTypeMap, args?:Mp.PlaylistContextMenuSubTypeMap[keyof Mp.PlaylistContextMenuSubTypeMap]) => {
 
@@ -268,10 +267,10 @@ const onPlayerReady = () => {
 
 }
 
-const loadMediaFile = (autoPlay:boolean) => {
+const loadMediaFile = (autoPlay:boolean, startFrom?:number) => {
     const currentFile = getCurrentFile();
-    respond("Playlist", "load-file", {currentFile, autoPlay})
-    respond("Player", "load-file", {currentFile, autoPlay})
+    respond("Playlist", "load-file", {currentFile, autoPlay, startFrom})
+    respond("Player", "load-file", {currentFile, autoPlay, startFrom})
 }
 
 const initPlaylist = (fullPaths:string[]) => {
@@ -315,6 +314,7 @@ const addToPlaylist = (fullPaths:string[]) => {
 
 // Dont use await
 const delayApplyTags = async (fullPaths:string[], append:boolean) => {
+
     const tags = await util.retrieveTags(fullPaths, append)
 
     playlistFiles.filter(file => file.fullPath in tags).forEach(file => {
@@ -897,6 +897,9 @@ const renameFile = async (data:Mp.RenameRequest) => {
     }catch(ex){
         await showErrorMessage(ex)
         respond("Playlist", "after-rename", {file:file, error:true})
+        if(fileIndex == currentIndex){
+            loadMediaFile(mediaPlayStatus == "playing", data.currentTime)
+        }
     }
 }
 
