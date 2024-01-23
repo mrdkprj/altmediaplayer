@@ -2,10 +2,11 @@ import path from "path";
 import { spawn, spawnSync } from "child_process";
 
 const resourcePath = process.env.NODE_ENV === "development" ? path.join(__dirname, "..", "..", "resources") : path.join(process.resourcesPath, "resources")
+const command = "chcp 65001 > NUL & powershell.exe -NonInteractive -NoProfile -Command";
 
 export const getCommentSync = (fullPath:string) => {
 
-    const result = spawnSync("powershell.exe",[path.join(resourcePath, "get_comment.ps1"), fullPath]);
+    const result = spawnSync(command,[path.join(resourcePath, "get_comment.ps1"), fullPath], { shell: true });
 
     return {[fullPath]:result.stdout.toString()}
 
@@ -13,7 +14,7 @@ export const getCommentSync = (fullPath:string) => {
 
 export const getComment = async (fullPath:string) => {
 
-    const child = spawn("powershell.exe",[path.join(resourcePath, "get_comment.ps1"), fullPath]);
+    const child = spawn(command,[path.join(resourcePath, "get_comment.ps1"), fullPath], { shell: true });
     let data = "";
     for await (const chunk of child.stdout) {
         data += chunk;
@@ -27,7 +28,7 @@ export const getAllComments = async (fullPaths:string[]):Promise<{[key:string]:s
 
     const args = fullPaths.map(fullPath => `"${fullPath}"`).join(" ")
 
-    const child = spawn("powershell.exe",[path.join(resourcePath, "get_comments.ps1"), args]);
+    const child = spawn(command,[path.join(resourcePath, "get_comments.ps1"), args], { shell: true });
     let data = "";
     for await (const chunk of child.stdout) {
         data += chunk;

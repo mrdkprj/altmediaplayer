@@ -259,14 +259,12 @@ declare global {
 
         type PlaylistChangeEvent = {
             files:MediaFile[];
-            type:PlaylistChangeEventType;
         }
 
         type ChangePlaylistOrderRequet = {
             start:number;
             end:number;
             currentIndex:number;
-            type:PlaylistChangeEventType
         }
 
         type ProgressEvent = {

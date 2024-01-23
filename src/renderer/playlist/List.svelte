@@ -51,8 +51,7 @@
             window.api.send("change-playlist-order", {
                 start:getChildIndex($appState.dragState.startId),
                 end:getChildIndex($appState.dragState.targetId),
-                currentIndex:getChildIndex($appState.playlingItemId),
-                type:"Move"
+                currentIndex:getChildIndex($appState.playlingItemId)
             });
 
         }

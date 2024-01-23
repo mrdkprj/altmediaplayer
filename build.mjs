@@ -3,7 +3,7 @@ import { build } from "electron-builder"
 build({
     config: {
         appId: "com.altmediaplayer.app",
-        productName: "altmediaplayer",
+        productName: "altmediaplayer2",
         files:[
             "out/**/*"
         ],
@@ -22,11 +22,11 @@ build({
             icon: "/src/assets/icon.ico",
             fileAssociations: [
                 {
-                    "ext": ["mp4","mov","avi","wmv","webm","flv"],
+                    "ext": ["mp4","mov","webm","ogg","ogv"],
                     "icon": "src/assets/icon.ico",
                 },
                 {
-                    "ext": "mp3",
+                    "ext": ["mp3","oga"],
                     "icon": "src/assets/icon_audio.ico",
                 },
 
