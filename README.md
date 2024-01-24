@@ -1,6 +1,6 @@
 # AltMediaPlayer
-AltMediaPlayer is free and simple media player, made as an alternative to another media player with lots of options/tools/ads.
-It plays video and audio files with sortable and groupable playlist.
+AltMediaPlayer is free and simple media player, made as an alternative to another media player with lots of options/tools/ads.  
+It plays video and audio files with sortable and groupable playlist.  
 
 ![Square150x150Logo](https://github.com/mrdkprj/altmediaplayer/assets/37989181/943c295c-5100-43ae-a65f-bb2e3eb95017)
 
@@ -8,8 +8,15 @@ It plays video and audio files with sortable and groupable playlist.
 At present, it only supports Windows.
 
 ## Usage
-To play, just drag & drop or double click files.
+To play, just drag & drop or double click files.  
 To load next/previous file, right click the next/previous button.
+
+## Features
+Video and audio play (Supported formats are limited due to the use of HTML5 Video).  
+Converting video and autio (Available options are limited).  
+Fullscreen, Picture in Picture mode.  
+Save and load playlist file.  
+Saving video image.  
 
 ## Privacy policy
 - This app and developer do not collect any personal information or privacy-related information about user.
