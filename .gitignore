@@ -33,3 +33,5 @@ dist/
 
 # package
 package/
+
+electron.vite.config*.mjs

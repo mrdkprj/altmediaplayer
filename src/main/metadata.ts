@@ -2,7 +2,7 @@ import path from "path";
 import { spawn, spawnSync } from "child_process";
 
 const resourcePath = process.env.NODE_ENV === "development" ? path.join(__dirname, "..", "..", "resources") : path.join(process.resourcesPath, "resources")
-const command = "chcp 65001 > NUL & powershell.exe -NonInteractive -NoProfile -Command";
+const command = "chcp 65001 > NUL & powershell.exe -file";
 
 export const getCommentSync = (fullPath:string) => {
 

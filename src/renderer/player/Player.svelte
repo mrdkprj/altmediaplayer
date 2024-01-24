@@ -193,11 +193,11 @@
 
         if(!$appState.loaded) return;
 
-        if(button === Buttons.right){
+        if(button === Buttons.left){
             changeCurrentTime($appState.media.seekSpeed);
         }
 
-        if(button === Buttons.left){
+        if(button === Buttons.right){
             changeFile(FORWARD)
         }
 
@@ -207,11 +207,11 @@
 
         if(!$appState.loaded) return;
 
-        if(button === Buttons.right){
+        if(button === Buttons.left){
             changeCurrentTime(-$appState.media.seekSpeed)
         }
 
-        if(button === Buttons.left){
+        if(button === Buttons.right){
             changeFile(BACKWARD)
         }
 
