@@ -3,7 +3,7 @@ import { build } from "electron-builder"
 build({
     config: {
         appId: "com.altmediaplayer.app",
-        productName: "altmediaplayer",
+        productName: "AltMediaPlayer",
         files:[
             "out/**/*"
         ],

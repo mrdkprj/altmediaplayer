@@ -4,7 +4,7 @@
     import List from "./List.svelte";
     import { getDropFiles } from "../fileDropHandler";
     import { handleShortcut } from "../shortcut"
-    import { handleKeyEvent } from "../../constants";
+    import { handleKeyEvent, Buttons } from "../../constants";
     import { appState, dispatch } from "./appStateReducer";
     import { useTranslation } from "../../translation/useTranslation"
 
@@ -37,7 +37,7 @@
 
         if(!e.target || !(e.target instanceof HTMLElement)) return;
 
-        if(e.button === 2 && $appState.selection.selectedIds.length > 1){
+        if(e.button === Buttons.right && $appState.selection.selectedIds.length > 1){
             if($appState.selection.selectedIds.includes(e.target.id)){
                 return;
             }

@@ -15,9 +15,7 @@ export const useTranslation = (lang:Mp.Lang) => {
         }
     }
 
-    $: {
-        store.set(lang)
-    }
+    store.set(lang)
 
     return t;
 }

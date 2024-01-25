@@ -2,9 +2,9 @@ import fs from "fs"
 import path from "path";
 import util from "./util";
 
-const CONFIG_FILE_NAME = "mediaplayer.config.json"
+const SETTING_FILE_NAME = "altmediaplayer.settings.json"
 
-const defaultConfig :Mp.Config = {
+const defaultSettings :Mp.Settings = {
     bounds: {width:1200, height:800, x:0, y:0},
     playlistBounds: {width:400, height:700, x:0, y:0},
     isMaximized: false,
@@ -24,26 +24,22 @@ const defaultConfig :Mp.Config = {
         ampLevel: 0.07,
         mute:false,
     },
-    path:{
-        captureDestDir:"",
-        convertDestDir:"",
-        playlistDestDir:"",
-    },
+    defaultPath:"",
     lang:"en",
     tags:[],
 }
 
-export default class Config{
+export default class Settings{
 
-    data:Mp.Config;
+    data:Mp.Settings;
 
     private file:string;
 
     constructor(workingDirectory:string){
-        this.data = defaultConfig;
+        this.data = defaultSettings;
         const directory = process.env.NODE_ENV === "development" ? path.join(__dirname, "..", "..", "temp") : path.join(workingDirectory, "temp");
         util.exists(directory, true);
-        this.file = path.join(directory, CONFIG_FILE_NAME)
+        this.file = path.join(directory, SETTING_FILE_NAME)
         this.init();
     }
 
@@ -54,7 +50,7 @@ export default class Config{
         if(fileExists){
 
             const rawData = fs.readFileSync(this.file, {encoding:"utf8"});
-            this.data = this.createConfig(JSON.parse(rawData))
+            this.data = this.createSettings(JSON.parse(rawData))
 
         }else{
 
@@ -63,15 +59,15 @@ export default class Config{
         }
     }
 
-    private createConfig(rawConfig:any):Mp.Config{
+    private createSettings(rawSettings:any):Mp.Settings{
 
-        const config = {...defaultConfig} as any;
+        const config = {...defaultSettings} as any;
 
-        Object.keys(rawConfig).forEach(key => {
+        Object.keys(rawSettings).forEach(key => {
 
             if(!(key in config)) return;
 
-            const value = rawConfig[key];
+            const value = rawSettings[key];
 
             if(typeof value === "object" && !Array.isArray(value)){
 

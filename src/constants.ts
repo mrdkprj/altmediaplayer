@@ -57,7 +57,6 @@ export const Rotations = {
 
 export const FORWARD = 1;
 export const BACKWARD = -1
-export const FIT_TO_WINDOW_ITEM_INDEX = 1;
 export const Buttons = {
     left:0,
     right:2,

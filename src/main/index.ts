@@ -4,7 +4,7 @@ import path from "path";
 import url from "url"
 import Helper from "./helper";
 import util from "./util";
-import Config from "./config";
+import Config from "./settings";
 import { EmptyFile, FORWARD, BACKWARD, VideoFormats, AudioExtentions, AudioFormats } from "../constants";
 
 const locked = app.requestSingleInstanceLock(process.argv);
@@ -36,7 +36,7 @@ const secondInstanceState:Mp.SecondInstanceState = {
     requireInitPlaylist:false,
 }
 
-let mediaPlayStatus:Mp.PlayStatus;
+let playStatus:Mp.PlayStatus;
 let doShuffle = false;
 let currentIndex = -1;
 let randomIndices:number[] = [];
@@ -267,10 +267,10 @@ const onPlayerReady = () => {
 
 }
 
-const loadMediaFile = (autoPlay:boolean, startFrom?:number) => {
+const loadMediaFile = (startFrom?:number) => {
     const currentFile = getCurrentFile();
-    respond("Playlist", "load-file", {currentFile, autoPlay, startFrom})
-    respond("Player", "load-file", {currentFile, autoPlay, startFrom})
+    respond("Playlist", "load-file", {currentFile, status:playStatus, startFrom})
+    respond("Player", "load-file", {currentFile, status:playStatus, startFrom})
 }
 
 const initPlaylist = (fullPaths:string[]) => {
@@ -289,7 +289,9 @@ const initPlaylist = (fullPaths:string[]) => {
 
     shuffleList();
 
-    loadMediaFile(true);
+    changePlayStatus("playing")
+
+    loadMediaFile();
 
 }
 
@@ -307,7 +309,7 @@ const addToPlaylist = (fullPaths:string[]) => {
 
     if(playlistFiles.length && currentIndex < 0){
         currentIndex = 0;
-        loadMediaFile(false);
+        loadMediaFile();
     }
 
 }
@@ -341,6 +343,10 @@ const reset = () => {
     playlistSelection.selectedIds = []
     currentIndex = -1;
     respond("Playlist", "clear-playlist", {})
+}
+
+const changePlayStatus = (status:Mp.PlayStatus) => {
+    playStatus = status;
 }
 
 const changeSizeMode = () => {
@@ -437,21 +443,22 @@ const changeIndex = (index:number) => {
 
     currentIndex = nextIndex;
 
-    loadMediaFile(false);
+    loadMediaFile();
 }
 
 const selectFile = (index:number) => {
     currentIndex = index;
-    loadMediaFile(true);
+    changePlayStatus("playing")
+    loadMediaFile();
 }
 
-const changePlayStatus = (data:Mp.ChangePlayStatusRequest) => {
+const onPlayerPlayStatusChange = (data:Mp.ChangePlayStatusRequest) => {
 
-    mediaPlayStatus = data.status;
+    changePlayStatus(data.status)
 
     Renderers.Player?.setThumbarButtons([])
 
-    if(mediaPlayStatus == "playing"){
+    if(playStatus == "playing"){
         Renderers.Player?.setThumbarButtons(thumButtons[1])
     }else{
         Renderers.Player?.setThumbarButtons(thumButtons[0])
@@ -492,7 +499,8 @@ const changePlaylistItemOrder = (data:Mp.ChangePlaylistOrderRequet) => {
 
 const clearPlaylist = () => {
     reset();
-    loadMediaFile(false);
+    changePlayStatus("stopped")
+    loadMediaFile();
 }
 
 const removeFromPlaylist = (selectedIds:string[]) => {
@@ -511,7 +519,7 @@ const removeFromPlaylist = (selectedIds:string[]) => {
     currentIndex = getIndexAfterRemove(removeIndices)
 
     if(isCurrentFileRemoved){
-        loadMediaFile(false);
+        loadMediaFile();
     }
 
 }
@@ -686,7 +694,7 @@ const saveCapture = async (data:Mp.CaptureEvent) => {
     if(!Renderers.Player) return;
 
     const savePath = dialog.showSaveDialogSync(Renderers.Player, {
-        defaultPath: path.join(config.data.path.captureDestDir, `${getCurrentFile().name}-${data.timestamp}.jpeg`),
+        defaultPath: path.join(config.data.defaultPath, `${getCurrentFile().name}-${data.timestamp}.jpeg`),
         filters: [
             { name: "Image", extensions: ["jpeg", "jpg"] },
         ],
@@ -694,7 +702,7 @@ const saveCapture = async (data:Mp.CaptureEvent) => {
 
     if(!savePath) return;
 
-    config.data.path.captureDestDir = path.dirname(savePath);
+    config.data.defaultPath = path.dirname(savePath);
 
     fs.writeFileSync(savePath, data.data, "base64")
 }
@@ -713,7 +721,7 @@ const startConvert = async (data:Mp.ConvertRequest) => {
     const fileName =  file.name.replace(path.extname(file.name), "")
 
     const selectedPath = dialog.showSaveDialogSync(Renderers.Convert, {
-        defaultPath: path.join(config.data.path.convertDestDir, `${fileName}.${extension}`),
+        defaultPath: path.join(config.data.defaultPath, `${fileName}.${extension}`),
         filters: [
             {
                 name:data.convertFormat === "MP4" ? "Video" : "Audio",
@@ -724,7 +732,7 @@ const startConvert = async (data:Mp.ConvertRequest) => {
 
     if(!selectedPath) return endConvert()
 
-    config.data.path.convertDestDir = path.dirname(selectedPath)
+    config.data.defaultPath = path.dirname(selectedPath)
 
     const shouldReplace = getCurrentFile().fullPath === selectedPath
 
@@ -822,7 +830,7 @@ const loadPlaylistFile = () => {
 
     const file = dialog.showOpenDialogSync(Renderers.Playlist, {
         title: "Select file to load",
-        defaultPath: config.data.path.playlistDestDir,
+        defaultPath: config.data.defaultPath,
         filters: [
             { name: "Playlist File", extensions: ["json"] },
         ],
@@ -831,7 +839,7 @@ const loadPlaylistFile = () => {
 
     if(!file) return;
 
-    config.data.path.playlistDestDir = path.dirname(file[0]);
+    config.data.defaultPath = path.dirname(file[0]);
 
     const data = fs.readFileSync(file[0], "utf8")
 
@@ -844,7 +852,7 @@ const savePlaylistFile = () => {
     if(!Renderers.Playlist || !playlistFiles.length) return;
 
     const selectedPath = dialog.showSaveDialogSync(Renderers.Playlist, {
-        defaultPath: config.data.path.playlistDestDir,
+        defaultPath: config.data.defaultPath,
         filters: [
             { name: "Playlist File", extensions: ["json"] },
         ],
@@ -852,7 +860,7 @@ const savePlaylistFile = () => {
 
     if(!selectedPath) return
 
-    config.data.path.playlistDestDir = selectedPath;
+    config.data.defaultPath = selectedPath;
 
     const data = playlistFiles.map(file => file.fullPath)
     fs.writeFileSync(selectedPath, JSON.stringify(data), {encoding:"utf8"})
@@ -892,14 +900,14 @@ const renameFile = async (data:Mp.RenameRequest) => {
         respond("Playlist", "after-rename", {file:newMediaFile})
 
         if(fileIndex == currentIndex){
-            respond("Player", "load-file", {currentFile:newMediaFile, autoPlay:mediaPlayStatus == "playing", startFrom:data.currentTime})
+            loadMediaFile(data.currentTime)
         }
 
     }catch(ex){
         await showErrorMessage(ex)
         respond("Playlist", "after-rename", {file:file, error:true})
         if(fileIndex == currentIndex){
-            loadMediaFile(mediaPlayStatus == "playing", data.currentTime)
+            loadMediaFile(data.currentTime)
         }
     }
 }
@@ -978,7 +986,7 @@ const registerIpcChannels = () => {
     addEventHandler("load-file", onLoadRequest)
     addEventHandler("progress", changeProgressBar)
     addEventHandler("open-player-context", openPlayerContextMenu)
-    addEventHandler("play-status-change", changePlayStatus)
+    addEventHandler("play-status-change", onPlayerPlayStatusChange)
     addEventHandler("reload", onReload)
     addEventHandler("save-capture", saveCapture)
     addEventHandler("close-playlist", onClosePlaylist)

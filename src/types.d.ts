@@ -46,13 +46,13 @@ declare global {
         "load-file": Mp.FileLoadEvent;
         "toggle-play": Mp.Event;
         "toggle-fullscreen": Mp.Event;
-        "change-display-mode": Mp.ConfigChangeEvent;
+        "change-display-mode": Mp.SettingsChangeEvent;
         "capture-media": Mp.Event;
         "restart": Mp.Event;
         "before-trash": Mp.TrashRequest;
         "before-rename": Mp.RenameRequest;
         "log": Mp.Logging;
-        "after-toggle-maximize": Mp.ConfigChangeEvent;
+        "after-toggle-maximize": Mp.SettingsChangeEvent;
         "toggle-convert": Mp.Event;
         "change-playback-speed": Mp.ChangePlaybackSpeedRequest;
         "change-seek-speed": Mp.ChangeSeekSpeedRequest;
@@ -151,7 +151,7 @@ declare global {
             groupBy:boolean;
         }
 
-        type Config = {
+        type Settings = {
             bounds: Bounds;
             playlistBounds:Bounds;
             theme: Mp.Theme;
@@ -168,11 +168,7 @@ declare global {
                 ampLevel:number;
                 mute:boolean;
             };
-            path:{
-                captureDestDir:string;
-                convertDestDir:string;
-                playlistDestDir:string;
-            },
+            defaultPath:string;
             lang:Mp.Lang;
             tags:string[];
         }
@@ -237,7 +233,7 @@ declare global {
         }
 
         type ReadyEvent = {
-            config:Config;
+            config:Settings;
         }
 
         type FullscreenChange = {
@@ -282,7 +278,7 @@ declare global {
 
         type FileLoadEvent = {
             currentFile:MediaFile;
-            autoPlay:boolean;
+            status:Mp.PlayStatus;
             startFrom?:number;
         }
 
@@ -356,8 +352,8 @@ declare global {
             file:MediaFile;
         }
 
-        type ConfigChangeEvent = {
-            config:Config;
+        type SettingsChangeEvent = {
+            config:Settings;
         }
 
         type OpenFileDialogRequest = {

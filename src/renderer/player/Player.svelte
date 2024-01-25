@@ -4,7 +4,7 @@
     import { appState, dispatch } from "./appStateReducer";
     import { useTranslation } from "../../translation/useTranslation"
 
-    import { FORWARD, BACKWARD, APP_NAME, handleKeyEvent } from "../../constants";
+    import { FORWARD, BACKWARD, APP_NAME, Buttons, handleKeyEvent } from "../../constants";
     import { getDropFiles } from "../fileDropHandler";
     import { handleShortcut } from "../shortcut";
     import Footer from "./Footer.svelte";
@@ -15,11 +15,6 @@
     let hideControlTimeout:number | null
     let afterReleaseCallback:(() => void) | undefined;
     let lang:Mp.Lang = "en";
-
-    const Buttons = {
-        left:0,
-        right:2,
-    }
 
     const t = useTranslation(lang);
 
@@ -99,12 +94,13 @@
     const loadMedia = (e:Mp.FileLoadEvent) => {
 
         dispatch({type:"currentFile", value:e.currentFile})
-
-        video.autoplay = e.autoPlay ? e.autoPlay : $appState.playing;
-        video.muted = $appState.media.mute;
-        video.playbackRate = $appState.media.playbackSpeed
+        dispatch({type:"playStatus", value:e.status})
         dispatch({type:"currentTime", value:0})
         dispatch({type:"startFrom", value:e.startFrom})
+
+        video.autoplay = e.status == "playing"
+        video.muted = $appState.media.mute;
+        video.playbackRate = $appState.media.playbackSpeed
 
         video.load();
 
@@ -141,8 +137,10 @@
 
         if(data.fileIds.includes($appState.currentFile.id)){
             initPlayer();
+            afterReleaseCallback = () => window.api.send("trash-ready", {fileIds:data.fileIds})
+        }else{
+            window.api.send("trash-ready", {fileIds:data.fileIds})
         }
-        afterReleaseCallback = () => window.api.send("trash-ready", {fileIds:data.fileIds})
 
     };
 
@@ -151,13 +149,14 @@
         if($appState.currentFile.id == data.id){
             data.currentTime = $appState.media.currentTime;
             initPlayer();
+            afterReleaseCallback = () => window.api.send("rename-ready", data)
+        }else{
+            window.api.send("rename-ready", data)
         }
-
-        afterReleaseCallback = () => window.api.send("rename-ready", data)
 
     }
 
-    const changeVideoSize = (config?:Mp.Config) => {
+    const changeVideoSize = (config?:Mp.Settings) => {
 
         const fitToWindow = config ? config.video.fitToWindow : $appState.media.fitToWindow
         const containerRect = container.getBoundingClientRect();
@@ -235,7 +234,7 @@
 
     const onPlayed = () => {
         window.api.send("play-status-change", {status:"playing"})
-        dispatch({type:"playing", value:true})
+        dispatch({type:"playStatus", value:"playing"})
     }
 
     const onPaused = () => {
@@ -243,7 +242,7 @@
         if(video.currentTime == video.duration) return;
 
         window.api.send("play-status-change", {status:"paused"})
-        dispatch({type:"playing", value:false})
+        dispatch({type:"playStatus", value:"paused"})
     }
 
     const stop = () => {
@@ -251,7 +250,7 @@
         if(!$appState.loaded) return;
 
         window.api.send("play-status-change", {status:"stopped"})
-        dispatch({type:"playing", value:false})
+        dispatch({type:"playStatus", value:"stopped"})
         video.load();
 
     }
@@ -303,7 +302,7 @@
         dispatch({type:"isMaximized", value:!$appState.isMaximized})
     }
 
-    const onWindowSizeChanged = (e:Mp.ConfigChangeEvent) => {
+    const onWindowSizeChanged = (e:Mp.SettingsChangeEvent) => {
         dispatch({type:"isMaximized", value:e.config.isMaximized})
     }
 
@@ -354,7 +353,7 @@
         dispatch({type:"converting"})
     }
 
-    const onChangeDisplayMode = (e:Mp.ConfigChangeEvent) => {
+    const onChangeDisplayMode = (e:Mp.SettingsChangeEvent) => {
         dispatch({type:"fitToWindow", value:e.config.video.fitToWindow})
         changeVideoSize(e.config);
     }

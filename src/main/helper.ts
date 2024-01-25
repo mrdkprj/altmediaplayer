@@ -24,10 +24,10 @@ export const ADD_TAG_MENU_Id = "addTag"
 
 export default class Helper{
 
-    config:Mp.Config;
+    config:Mp.Settings;
     t:(key:keyof Mp.label) => string;
 
-    constructor(config:Mp.Config){
+    constructor(config:Mp.Settings){
         this.config = config;
         this.t = translation(this.config.lang)
     }

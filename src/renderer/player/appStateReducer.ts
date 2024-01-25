@@ -20,7 +20,7 @@ type AppAction =
 | { type: "currentFile", value: Mp.MediaFile}
 | { type: "isMaximized", value: boolean}
 | { type: "isFullScreen", value: boolean}
-| { type: "playing", value: boolean}
+| { type: "playStatus", value: Mp.PlayStatus}
 | { type: "converting"}
 | { type: "tooltipVisible", value: boolean}
 | { type: "currentTime", value: number}
@@ -91,8 +91,10 @@ const updater = (state: AppState, action: AppAction): AppState => {
         case "isFullScreen":
             return {...state, isFullScreen:action.value};
 
-        case "playing":
-            return {...state, playing:action.value};
+        case "playStatus":{
+            const playing = action.value == "playing"
+            return {...state, playing};
+        }
 
         case "converting":
             return {...state, converting:!state.converting};
