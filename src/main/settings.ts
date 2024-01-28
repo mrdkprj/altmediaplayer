@@ -25,22 +25,45 @@ const defaultSettings :Mp.Settings = {
         mute:false,
     },
     defaultPath:"",
-    lang:"en",
+    locale:{
+        mode:"system",
+        lang:"en"
+    },
     tags:[],
 }
 
+export let settings:Settings | undefined;
+
 export default class Settings{
 
-    data:Mp.Settings;
+    tempPath:string;
+    data = defaultSettings;
 
     private file:string;
 
-    constructor(workingDirectory:string){
-        this.data = defaultSettings;
-        const directory = process.env.NODE_ENV === "development" ? path.join(__dirname, "..", "..", "temp") : path.join(workingDirectory, "temp");
-        util.exists(directory, true);
-        this.file = path.join(directory, SETTING_FILE_NAME)
+    constructor(userDataPath:string, langs:string[]){
+        this.tempPath = process.env.NODE_ENV === "development" ? path.join(__dirname, "..", "..", "temp") : path.join(userDataPath, "temp");
+        util.exists(this.tempPath, true);
+        this.file = path.join(this.tempPath, SETTING_FILE_NAME)
         this.init();
+        this.setLanguage(langs)
+    }
+
+    private setLanguage(langs:string[]){
+
+        if(this.data.locale.mode == "system"){
+
+            if(langs[0].includes("ja")){
+                this.data.locale.lang = "ja"
+            }else{
+                this.data.locale.lang = "en"
+            }
+
+        }else{
+
+            this.data.locale.lang = this.data.locale.mode
+        }
+
     }
 
     private init(){

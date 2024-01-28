@@ -1,4 +1,5 @@
-export const ja:Mp.label = {
+export const ja:Mp.Labels = {
+    restart:"再起動",
     shuffle: "シャッフル",
     sort:"ソート",
     playbackSpeed: "再生速度",
@@ -41,10 +42,14 @@ export const ja:Mp.label = {
     audioBitrate:"ビットレート（オーディオ）",
     maximizeVolue:"最大化",
     volume:"音量",
-    start:"Start",
-    cancel:"Cancel",
-    close:"Close",
+    start:"開始",
+    cancel:"キャンセル",
+    close:"閉じる",
     mute:"ミュート",
     tags:"コメントにタグを追加",
     manageTag:"タグを管理",
+    mediaFile:"メディアファイル",
+    playlistFile:"プレイリスト",
+    selectConvertInputFile:"変換するファイルを選択",
+    selectPlaylistFile:"プレイリストを選択",
 }

@@ -1,11 +1,12 @@
-import {app, ipcMain, clipboard, dialog, shell, protocol, nativeTheme} from "electron";
+import {app, ipcMain, clipboard, shell, protocol, nativeTheme} from "electron";
 import fs from "fs";
 import path from "path";
 import url from "url"
 import Helper from "./helper";
 import util from "./util";
-import Config from "./settings";
-import { EmptyFile, FORWARD, BACKWARD, VideoFormats, AudioExtentions, AudioFormats } from "../constants";
+import Settings from "./settings";
+import Dialogs from "./dialogs";
+import { EmptyFile, FORWARD, BACKWARD, AudioExtentions } from "../constants";
 
 const locked = app.requestSingleInstanceLock(process.argv);
 
@@ -17,8 +18,10 @@ protocol.registerSchemesAsPrivileged([
     { scheme: "app", privileges: { bypassCSP: true } },
 ])
 
-const config = new Config(app.getPath("userData"));
-const helper = new Helper(config.data);
+const settings = new Settings(app.getPath("userData"), app.getPreferredSystemLanguages());
+util.setUserDataPath(app.getPath("userData"))
+const helper = new Helper(settings.data);
+const dialogs = new Dialogs(settings.data)
 
 const Renderers:Renderer = {
     Player:null,
@@ -172,7 +175,7 @@ const afterSecondInstance = () => {
 
     Renderers.Player.show();
 
-    if(config.data.isMaximized){
+    if(settings.data.isMaximized){
         Renderers.Player.maximize();
     }
 }
@@ -187,19 +190,9 @@ app.on("second-instance", (_event:Electron.Event, _argv:string[], _workingDirect
 
 })
 
-const getLanguage = ():Mp.Lang => {
-/*
-    const langs = app.getPreferredSystemLanguages();
-
-    if(langs[0].includes("ja")) return "ja"
-*/
-    return "en"
-}
-
 app.on("ready", () => {
 
-    nativeTheme.themeSource = config.data.theme
-    config.data.lang = getLanguage();
+    nativeTheme.themeSource = settings.data.theme
 
     setSecondInstanceTimeout();
 
@@ -221,11 +214,11 @@ app.on("ready", () => {
 
     Renderers.Player.on("ready-to-show", () => {
 
-        if(config.data.isMaximized){
+        if(settings.data.isMaximized){
             Renderers.Player?.maximize();
         }
 
-        Renderers.Player?.setBounds(config.data.bounds)
+        Renderers.Player?.setBounds(settings.data.bounds)
         Renderers.Player?.setThumbarButtons(thumButtons[0])
 
         onPlayerReady();
@@ -245,21 +238,17 @@ const respond = <K extends keyof RendererChannelEventMap>(rendererName:RendererN
     Renderers[rendererName]?.webContents.send(channel, data);
 }
 
-const showErrorMessage = async (ex:any) => {
-    await dialog.showMessageBox({type:"error", message:ex.message})
-}
-
 const onPlayerReady = () => {
 
     Renderers.Player?.show();
 
-    if(config.data.playlistVisible){
+    if(settings.data.playlistVisible){
         Renderers.Playlist?.show();
     }
 
-    respond("Player", "ready", {config:config.data});
-    respond("Playlist", "ready", {config:config.data});
-    respond("Convert", "ready", {config:config.data});
+    respond("Player", "ready", {settings:settings.data});
+    respond("Playlist", "ready", {settings:settings.data});
+    respond("Convert", "ready", {settings:settings.data});
 
     togglePlay();
 
@@ -337,6 +326,7 @@ const getCurrentFile = () => {
 }
 
 const reset = () => {
+    util.kill();
     playlistFiles.length = 0;
     randomIndices.length = 0;
     playlistSelection.selectedId = "";
@@ -349,24 +339,14 @@ const changePlayStatus = (status:Mp.PlayStatus) => {
     playStatus = status;
 }
 
-const changeSizeMode = () => {
-    config.data.video.fitToWindow = !config.data.video.fitToWindow
-    respond("Player", "change-display-mode", {config:config.data})
-}
-
-const changeTheme = (theme:Mp.Theme) => {
-    nativeTheme.themeSource = theme
-    config.data.theme = theme;
-}
-
 const onUnmaximize = () => {
-    config.data.isMaximized = false;
-    respond("Player", "after-toggle-maximize", {config:config.data})
+    settings.data.isMaximized = false;
+    respond("Player", "after-toggle-maximize", {settings:settings.data})
 }
 
 const onMaximize = () => {
-    config.data.isMaximized = true;
-    respond("Player","after-toggle-maximize", {config:config.data})
+    settings.data.isMaximized = true;
+    respond("Player","after-toggle-maximize", {settings:settings.data})
 }
 
 const toggleMaximize = () => {
@@ -375,37 +355,31 @@ const toggleMaximize = () => {
 
     if(Renderers.Player.isMaximized()){
         Renderers.Player.unmaximize();
-        Renderers.Player.setBounds(config.data.bounds)
+        Renderers.Player.setBounds(settings.data.bounds)
     }else{
-        config.data.bounds = Renderers.Player.getBounds()
+        settings.data.bounds = Renderers.Player.getBounds()
         Renderers.Player.maximize();
     }
 }
 
-const saveConfig = (data:Mp.MediaState) => {
+const saveSettings = () => {
 
     if(!Renderers.Player || !Renderers.Playlist) return;
 
     try{
-        config.data.isMaximized = Renderers.Player.isMaximized();
-        config.data.playlistBounds = Renderers.Playlist.getBounds()
-        config.data.audio.volume = data.videoVolume;
-        config.data.audio.ampLevel = data.ampLevel;
-        config.data.video.fitToWindow = data.fitToWindow;
-        config.data.audio.mute = data.mute;
+        settings.data.isMaximized = Renderers.Player.isMaximized();
+        settings.data.playlistBounds = Renderers.Playlist.getBounds()
 
-        config.save();
+        settings.save();
     }catch(ex){
-        showErrorMessage(ex);
+        dialogs.showErrorMessage(ex)
     }
 }
 
-const closeWindow = async (data:Mp.CloseRequest) => {
-    saveConfig(data.mediaState);
+const closeWindow = async () => {
+    saveSettings();
     await util.exit();
-    Renderers.Tag?.close();
-    Renderers.Playlist?.close();
-    Renderers.Player?.close();
+    app.quit();
 }
 
 const shuffleList = () => {
@@ -570,7 +544,7 @@ const deleteFile = async (data:Mp.TrashRequest) => {
         removeFromPlaylist(data.fileIds);
 
     }catch(ex){
-        showErrorMessage(ex);
+        dialogs.showErrorMessage(ex)
     }
 }
 
@@ -601,27 +575,27 @@ const copyFileNameToClipboard = (fullPath:boolean) => {
 }
 
 const toggleGroupBy = () => {
-    config.data.sort.groupBy = !config.data.sort.groupBy
+    settings.data.sort.groupBy = !settings.data.sort.groupBy
     sortPlayList();
 }
 
 const changeSortOrder = (sortOrder:Mp.SortOrder) => {
-    config.data.sort.order = sortOrder;
+    settings.data.sort.order = sortOrder;
     sortPlayList();
 }
 
 const sortPlayList = () => {
 
-    respond("Playlist", "sort-type-change", config.data.sort)
+    respond("Playlist", "sort-type-change", settings.data.sort)
 
     const currentFileId = getCurrentFile().id;
 
     if(!playlistFiles.length) return;
 
-    if(config.data.sort.groupBy){
-        util.sortByGroup(playlistFiles, config.data.sort.order)
+    if(settings.data.sort.groupBy){
+        util.sortByGroup(playlistFiles, settings.data.sort.order)
     }else{
-        util.sort(playlistFiles, config.data.sort.order)
+        util.sort(playlistFiles, settings.data.sort.order)
     }
 
     const sortedIds = playlistFiles.map(file => file.id);
@@ -636,8 +610,8 @@ const sortPlayList = () => {
 
 const togglePlaylistWindow = () => {
 
-    config.data.playlistVisible = !config.data.playlistVisible;
-    if(config.data.playlistVisible){
+    settings.data.playlistVisible = !settings.data.playlistVisible;
+    if(settings.data.playlistVisible){
         Renderers.Playlist?.show();
     }else{
         Renderers.Playlist?.hide();
@@ -655,26 +629,37 @@ const openConvertSourceFileDialog = (e:Mp.OpenFileDialogRequest) => {
 
     if(!Renderers.Convert) return;
 
-    const files = dialog.showOpenDialogSync(Renderers.Convert, {
-        title: "Select file to convert",
-        defaultPath: e.fullPath,
-        filters: [
-            { name: "Media File", extensions: VideoFormats.concat(AudioFormats) },
-        ],
-        properties: ["openFile", "multiSelections"]
-    })
+    const files = dialogs.openConvertSourceFileDialog(Renderers.Convert, e.fullPath)
 
     if(files){
         respond("Convert", "after-sourcefile-select", {file:util.toFile(files[0])})
     }
 }
 
+const changeSizeMode = () => {
+    settings.data.video.fitToWindow = !settings.data.video.fitToWindow
+    respond("Player", "change-display-mode", {settings:settings.data})
+}
+
+const changeTheme = (theme:Mp.Theme) => {
+    nativeTheme.themeSource = theme
+    settings.data.theme = theme;
+}
+
 const changePlaybackSpeed = (playbackSpeed:number) => {
+    settings.data.video.playbackSpeed = playbackSpeed
     respond("Player", "change-playback-speed", {playbackSpeed})
 }
 
 const changeSeekSpeed = (seekSpeed:number) => {
+    settings.data.video.seekSpeed = seekSpeed;
     respond("Player", "change-seek-speed", {seekSpeed});
+}
+
+const onMediaStateChange = (data:Mp.MediaState) => {
+    settings.data.audio.volume = data.videoVolume;
+    settings.data.audio.ampLevel = data.ampLevel;
+    settings.data.audio.mute = data.mute;
 }
 
 const changeProgressBar = (data:Mp.ProgressEvent) => Renderers.Player?.setProgressBar(data.progress);
@@ -693,16 +678,11 @@ const saveCapture = async (data:Mp.CaptureEvent) => {
 
     if(!Renderers.Player) return;
 
-    const savePath = dialog.showSaveDialogSync(Renderers.Player, {
-        defaultPath: path.join(config.data.defaultPath, `${getCurrentFile().name}-${data.timestamp}.jpeg`),
-        filters: [
-            { name: "Image", extensions: ["jpeg", "jpg"] },
-        ],
-    })
+    const savePath = dialogs.saveImageDialog(Renderers.Player, file, data.timestamp)
 
     if(!savePath) return;
 
-    config.data.defaultPath = path.dirname(savePath);
+    settings.data.defaultPath = path.dirname(savePath);
 
     fs.writeFileSync(savePath, data.data, "base64")
 }
@@ -720,19 +700,11 @@ const startConvert = async (data:Mp.ConvertRequest) => {
     const extension = data.convertFormat.toLocaleLowerCase();
     const fileName =  file.name.replace(path.extname(file.name), "")
 
-    const selectedPath = dialog.showSaveDialogSync(Renderers.Convert, {
-        defaultPath: path.join(config.data.defaultPath, `${fileName}.${extension}`),
-        filters: [
-            {
-                name:data.convertFormat === "MP4" ? "Video" : "Audio",
-                extensions: [extension]
-            },
-        ],
-    })
+    const selectedPath = dialogs.saveMediaDialog(Renderers.Convert, fileName, extension, data.convertFormat)
 
     if(!selectedPath) return endConvert()
 
-    config.data.defaultPath = path.dirname(selectedPath)
+    settings.data.defaultPath = path.dirname(selectedPath)
 
     const shouldReplace = getCurrentFile().fullPath === selectedPath
 
@@ -773,7 +745,7 @@ const startConvert = async (data:Mp.ConvertRequest) => {
 const endConvert = (message?:string) => {
 
     if(message){
-        showErrorMessage(message)
+        dialogs.showErrorMessage(message)
     }
 
     respond("Convert", "after-convert", {})
@@ -787,19 +759,19 @@ const displayMetadata = async () => {
 
     const metadata = await util.getMediaMetadata(file.fullPath)
     const metadataString = JSON.stringify(metadata, undefined, 2);
-    const result = await dialog.showMessageBox(Renderers.Player, {type:"info", message:metadataString,  buttons:["Copy", "OK"], noLink:true})
+    const result = await dialogs.metadataDialog(Renderers.Player, metadataString)
     if(result.response === 0){
         clipboard.writeText(metadataString);
     }
 }
 
 const openTagEditor = () => {
-    respond("Tag", "open-tag-editor", {tags:config.data.tags})
+    respond("Tag", "open-tag-editor", {tags:settings.data.tags})
     Renderers.Tag?.show();
 }
 
 const saveTags = (e:Mp.SaveTagsEvent) => {
-    config.data.tags = e.tags;
+    settings.data.tags = e.tags;
     helper.refreshTagContextMenu(playlistMenu, e.tags, playlistContextMenuCallback)
 }
 
@@ -811,7 +783,7 @@ const addTagToFile = async (tag:string) => {
         try{
             await util.writeTag(file.fullPath, tag)
         }catch(ex:any){
-            showErrorMessage(ex)
+            dialogs.showErrorMessage(ex)
         }
     }
 }
@@ -828,18 +800,11 @@ const loadPlaylistFile = () => {
 
     if(!Renderers.Playlist) return;
 
-    const file = dialog.showOpenDialogSync(Renderers.Playlist, {
-        title: "Select file to load",
-        defaultPath: config.data.defaultPath,
-        filters: [
-            { name: "Playlist File", extensions: ["json"] },
-        ],
-        properties: ["openFile"]
-    })
+    const file = dialogs.openPlaylistDialog(Renderers.Playlist)
 
     if(!file) return;
 
-    config.data.defaultPath = path.dirname(file[0]);
+    settings.data.defaultPath = path.dirname(file[0]);
 
     const data = fs.readFileSync(file[0], "utf8")
 
@@ -851,16 +816,11 @@ const savePlaylistFile = () => {
 
     if(!Renderers.Playlist || !playlistFiles.length) return;
 
-    const selectedPath = dialog.showSaveDialogSync(Renderers.Playlist, {
-        defaultPath: config.data.defaultPath,
-        filters: [
-            { name: "Playlist File", extensions: ["json"] },
-        ],
-    })
+    const selectedPath = dialogs.savePlaylistDialog(Renderers.Playlist)
 
     if(!selectedPath) return
 
-    config.data.defaultPath = selectedPath;
+    settings.data.defaultPath = selectedPath;
 
     const data = playlistFiles.map(file => file.fullPath)
     fs.writeFileSync(selectedPath, JSON.stringify(data), {encoding:"utf8"})
@@ -871,7 +831,7 @@ const fromPlaylistJson = (jsonData:string) => {
     try{
         return JSON.parse(jsonData)
     }catch(ex:any){
-        showErrorMessage(ex);
+        dialogs.showErrorMessage(ex)
     }
 }
 
@@ -904,7 +864,7 @@ const renameFile = async (data:Mp.RenameRequest) => {
         }
 
     }catch(ex){
-        await showErrorMessage(ex)
+        await dialogs.showErrorMessage(ex)
         respond("Playlist", "after-rename", {file:file, error:true})
         if(fileIndex == currentIndex){
             loadMediaFile(data.currentTime)
@@ -928,7 +888,7 @@ const onReload = () => {
 }
 
 const onClosePlaylist = () => {
-    config.data.playlistVisible = false;
+    settings.data.playlistVisible = false;
     Renderers.Playlist?.hide()
 }
 
@@ -955,7 +915,7 @@ const onToggleFullscreen = (e:Mp.FullscreenChange) => {
         Renderers.Convert?.hide();
     }else{
         Renderers.Player?.setFullScreen(false)
-        if(config.data.playlistVisible) Renderers.Playlist?.show();
+        if(settings.data.playlistVisible) Renderers.Playlist?.show();
         Renderers.Player?.focus();
     }
 }
@@ -985,6 +945,7 @@ const registerIpcChannels = () => {
     addEventHandler("drop", dropFiles)
     addEventHandler("load-file", onLoadRequest)
     addEventHandler("progress", changeProgressBar)
+    addEventHandler("media-state-change", onMediaStateChange)
     addEventHandler("open-player-context", openPlayerContextMenu)
     addEventHandler("play-status-change", onPlayerPlayStatusChange)
     addEventHandler("reload", onReload)

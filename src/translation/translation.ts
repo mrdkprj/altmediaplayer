@@ -5,11 +5,11 @@ export const translation = (lang:Mp.Lang) => {
 
     const getTranslator = (lang:Mp.Lang) => {
 
-        const translator = (key:keyof Mp.label) => {
-            if(lang == "en"){
-                return en[key]
-            }else{
+        const translator = (key:keyof Mp.Labels) => {
+            if(lang == "ja"){
                 return ja[key]
+            }else{
+                return en[key]
             }
         }
 

@@ -13,7 +13,7 @@
     export let onClickPrevious:(button:number) => void;
     export let onClickNext:(button:number) => void;
     export let onClickMute:() => void;
-    export let t:(key: keyof Mp.label) => string;
+    export let t:(key: keyof Mp.Labels) => string;
 
     const formatTime = (secondValue:number) => {
         const hours = (Math.floor(secondValue / 3600)).toString().padStart(2, "0");

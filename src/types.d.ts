@@ -12,7 +12,7 @@ declare global {
     type MainChannelEventMap = {
         "minimize": Mp.Event;
         "toggle-maximize": Mp.Event;
-        "close": Mp.CloseRequest;
+        "close": Mp.Event;
         "shortcut": Mp.ShortcutEvent;
         "drop": Mp.DropRequest;
         "load-file": Mp.LoadFileRequest;
@@ -36,6 +36,7 @@ declare global {
         "rename-ready": Mp.RenameRequest;
         "playlist-item-selection-change": Mp.PlaylistItemSelectionChange;
         "open-sort-context": Mp.Position;
+        "media-state-change":Mp.MediaState;
         "close-tag": Mp.Event;
         "save-tags": Mp.SaveTagsEvent;
         "error": Mp.ErrorEvent;
@@ -169,7 +170,10 @@ declare global {
                 mute:boolean;
             };
             defaultPath:string;
-            lang:Mp.Lang;
+            locale:{
+                mode:"system" | Mp.Lang;
+                lang:Mp.Lang;
+            }
             tags:string[];
         }
 
@@ -233,7 +237,7 @@ declare global {
         }
 
         type ReadyEvent = {
-            config:Settings;
+            settings:Settings;
         }
 
         type FullscreenChange = {
@@ -353,7 +357,7 @@ declare global {
         }
 
         type SettingsChangeEvent = {
-            config:Settings;
+            settings:Settings;
         }
 
         type OpenFileDialogRequest = {
@@ -376,7 +380,13 @@ declare global {
             value:T;
         }
 
-        type label = {
+        type MessageLabel = {
+            selectConvertInputFile:string;
+            selectPlaylistFile:string;
+        }
+
+        type Label = {
+            restart:string;
             shuffle:string;
             sort:string;
             playbackSpeed:string;
@@ -425,7 +435,11 @@ declare global {
             mute:string;
             tags:string;
             manageTag:string;
+            mediaFile:string;
+            playlistFile:string;
         }
+
+        type Labels = Label & MessageLabel
 
     }
 

@@ -2,7 +2,7 @@
 
     import { onMount } from "svelte";
     import { appState, dispatch } from "./appStateReducer";
-    import { useTranslation } from "../../translation/useTranslation"
+    import { t, lang } from "../../translation/useTranslation"
 
     import { FORWARD, BACKWARD, APP_NAME, Buttons, handleKeyEvent } from "../../constants";
     import { getDropFiles } from "../fileDropHandler";
@@ -14,9 +14,6 @@
     let container:HTMLDivElement
     let hideControlTimeout:number | null
     let afterReleaseCallback:(() => void) | undefined;
-    let lang:Mp.Lang = "en";
-
-    const t = useTranslation(lang);
 
     const updateTime = (progress:number) => {
 
@@ -44,6 +41,7 @@
         video.volume = volume
         dispatch({type:"videoVolume", value:volume})
 
+        window.api.send("media-state-change", $appState.media)
     }
 
     const getGainNode = () => {
@@ -73,8 +71,15 @@
 
         dispatch({type:"ampLevel", value:ampLevel})
 
+        window.api.send("media-state-change", $appState.media)
+
         gainNode.gain.value = ampLevel * 10;
 
+    }
+
+    const toggleMute = () => {
+        dispatch({type:"mute", value:!$appState.media.mute})
+        window.api.send("media-state-change", $appState.media)
     }
 
     const onFileDrop = (e:DragEvent) => {
@@ -289,10 +294,6 @@
 
     }
 
-    const toggleMute = () => {
-        dispatch({type:"mute", value:!$appState.media.mute})
-    }
-
     const minimize = () => {
         window.api.send("minimize", {})
     }
@@ -303,7 +304,7 @@
     }
 
     const onWindowSizeChanged = (e:Mp.SettingsChangeEvent) => {
-        dispatch({type:"isMaximized", value:e.config.isMaximized})
+        dispatch({type:"isMaximized", value:e.settings.isMaximized})
     }
 
     const hideControl = () => {
@@ -354,26 +355,28 @@
     }
 
     const onChangeDisplayMode = (e:Mp.SettingsChangeEvent) => {
-        dispatch({type:"fitToWindow", value:e.config.video.fitToWindow})
-        changeVideoSize(e.config);
+        dispatch({type:"fitToWindow", value:e.settings.video.fitToWindow})
+        changeVideoSize(e.settings);
     }
 
     const close = () => {
-        window.api.send("close", {mediaState:$appState.media});
+        window.api.send("close", {});
     }
 
     const prepare = (e:Mp.ReadyEvent) => {
 
-        dispatch({type:"isMaximized", value:e.config.isMaximized})
+        $lang = e.settings.locale.lang;
 
-        updateVolume(e.config.audio.volume);
-        updateAmpLevel(e.config.audio.ampLevel)
+        dispatch({type:"isMaximized", value:e.settings.isMaximized})
 
-        dispatch({type:"mute", value:e.config.audio.mute})
+        updateVolume(e.settings.audio.volume);
+        updateAmpLevel(e.settings.audio.ampLevel)
 
-        dispatch({type:"fitToWindow", value:e.config.video.fitToWindow})
-        dispatch({type:"playbackSpeed", value:e.config.video.playbackSpeed})
-        dispatch({type:"seekSpeed", value:e.config.video.seekSpeed})
+        dispatch({type:"mute", value:e.settings.audio.mute})
+
+        dispatch({type:"fitToWindow", value:e.settings.video.fitToWindow})
+        dispatch({type:"playbackSpeed", value:e.settings.video.playbackSpeed})
+        dispatch({type:"seekSpeed", value:e.settings.video.seekSpeed})
 
         initPlayer();
 
@@ -546,7 +549,7 @@
         onClickPrevious={playBackward}
         onClickNext={playFoward}
         onClickMute={toggleMute}
-        t={t}
+        t={$t}
     />
 
 </div>

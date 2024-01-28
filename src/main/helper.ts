@@ -24,21 +24,21 @@ export const ADD_TAG_MENU_Id = "addTag"
 
 export default class Helper{
 
-    config:Mp.Settings;
-    t:(key:keyof Mp.label) => string;
+    private settings:Mp.Settings;
+    private t:(key:keyof Mp.Labels) => string;
 
-    constructor(config:Mp.Settings){
-        this.config = config;
-        this.t = translation(this.config.lang)
+    constructor(settings:Mp.Settings){
+        this.settings = settings;
+        this.t = translation(this.settings.locale.lang)
     }
 
     createPlayerWindow(){
 
         const window = new BrowserWindow({
-            width: this.config.bounds.width,
-            height: this.config.bounds.height,
-            x:this.config.bounds.x,
-            y:this.config.bounds.y,
+            width: this.settings.bounds.width,
+            height: this.settings.bounds.height,
+            x:this.settings.bounds.x,
+            y:this.settings.bounds.y,
             autoHideMenuBar: true,
             show: false,
             icon: nativeImage.createFromDataURL(icon),
@@ -61,10 +61,10 @@ export default class Helper{
 
         const window = new BrowserWindow({
             parent,
-            width: this.config.playlistBounds.width,
-            height: this.config.playlistBounds.height,
-            x:this.config.playlistBounds.x,
-            y:this.config.playlistBounds.y,
+            width: this.settings.playlistBounds.width,
+            height: this.settings.playlistBounds.height,
+            x:this.settings.playlistBounds.x,
+            y:this.settings.playlistBounds.y,
             autoHideMenuBar: true,
             show: false,
             frame:false,
@@ -151,7 +151,7 @@ export default class Helper{
             {
                 label: this.t("fitToWindow"),
                 type: "checkbox",
-                checked: this.config.video.fitToWindow,
+                checked: this.settings.video.fitToWindow,
                 click: () => onclick("FitToWindow"),
             },
             { type: "separator" },
@@ -180,7 +180,6 @@ export default class Helper{
                 label: this.t("theme"),
                 submenu:this.themeMenu(onclick)
             },
-
         ]
 
         return Menu.buildFromTemplate(template)
@@ -193,14 +192,14 @@ export default class Helper{
                 id: "themeLight",
                 label: this.t("light"),
                 type:"checkbox",
-                checked: this.config.theme === "light",
+                checked: this.settings.theme === "light",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "light"))
             },
             {
                 id: "themeDark",
                 label: this.t("dark"),
                 type:"checkbox",
-                checked: this.config.theme === "dark",
+                checked: this.settings.theme === "dark",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "dark"))
             },
         ]
@@ -403,7 +402,7 @@ export default class Helper{
     }
 
     private createTagContextMenu(onclick: Mp.PlaylistContextMenuCallback<"Tag">){
-        const template:Electron.MenuItemConstructorOptions[] = this.config.tags.sort().map(tag => {
+        const template:Electron.MenuItemConstructorOptions[] = this.settings.tags.sort().map(tag => {
                 return {
                     id:tag,
                     label: tag,
@@ -481,7 +480,7 @@ export default class Helper{
                 id:"groupby",
                 label: this.t("groupBy"),
                 type: "checkbox",
-                checked: this.config.sort.groupBy,
+                checked: this.settings.sort.groupBy,
                 click: () => onclick("GroupBy")
             },
             { type: "separator" },
@@ -489,28 +488,28 @@ export default class Helper{
                 id: "NameAsc",
                 label: this.t("nameAsc"),
                 type: "checkbox",
-                checked: this.config.sort.order === "NameAsc",
+                checked: this.settings.sort.order === "NameAsc",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "NameAsc"), toggleExcepts)
             },
             {
                 id: "NameDesc",
                 label: this.t("nameDesc"),
                 type: "checkbox",
-                checked: this.config.sort.order === "NameDesc",
+                checked: this.settings.sort.order === "NameDesc",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"NameDesc"), toggleExcepts)
             },
             {
                 id: "DateAsc",
                 label: this.t("dateAsc"),
                 type: "checkbox",
-                checked: this.config.sort.order === "DateAsc",
+                checked: this.settings.sort.order === "DateAsc",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateAsc"), toggleExcepts)
             },
             {
                 id: "DateDesc",
                 label: this.t("dateDesc"),
                 type: "checkbox",
-                checked: this.config.sort.order === "DateDesc",
+                checked: this.settings.sort.order === "DateDesc",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateDesc"), toggleExcepts)
             },
         ]

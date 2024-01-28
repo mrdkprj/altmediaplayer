@@ -4,7 +4,7 @@ import crypto from "crypto"
 import ffmpeg from "fluent-ffmpeg"
 import { exiftool } from "exiftool-vendored"
 import { Resolutions, Rotations } from "../constants";
-import { getAllComments } from "./metadata";
+import { getAllComments, killMetadataProcess } from "./metadata";
 
 class Util{
 
@@ -12,6 +12,7 @@ class Util{
     private command:ffmpeg.FfmpegCommand | null;
     private isDev:boolean;
     private tags:{[fullPath:string]:string} = {};
+    private tempPath = ""
 
     constructor(){
         this.convertDestFile = null;
@@ -26,7 +27,16 @@ class Util{
         ffmpeg.setFfprobePath(ffprobePath)
     }
 
+    setUserDataPath(userDataPath:string){
+        this.tempPath = process.env.NODE_ENV === "development" ? path.join(__dirname, "..", "..", "temp") : path.join(userDataPath, "temp");
+    }
+
+    kill(){
+        killMetadataProcess();
+    }
+
     async exit(){
+        killMetadataProcess();
         await exiftool.end();
     }
 
@@ -60,7 +70,7 @@ class Util{
 
         if(!fullPaths.length) return {};
 
-        const tags = await getAllComments(fullPaths)
+        const tags = await getAllComments(this.tempPath, fullPaths)
 
         if(append){
             this.tags = {...this.tags, ...tags}
