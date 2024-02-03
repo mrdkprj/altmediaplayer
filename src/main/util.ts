@@ -2,9 +2,8 @@ import fs from "fs"
 import path from "path";
 import crypto from "crypto"
 import ffmpeg from "fluent-ffmpeg"
-import { exiftool } from "exiftool-vendored"
+import metadata from "win32metadata"
 import { Resolutions, Rotations } from "../constants";
-import { getAllComments, killMetadataProcess } from "./metadata";
 
 class Util{
 
@@ -12,7 +11,6 @@ class Util{
     private command:ffmpeg.FfmpegCommand | null;
     private isDev:boolean;
     private tags:{[fullPath:string]:string} = {};
-    private tempPath = ""
 
     constructor(){
         this.convertDestFile = null;
@@ -25,19 +23,6 @@ class Util{
 
         ffmpeg.setFfmpegPath(ffmpegPath)
         ffmpeg.setFfprobePath(ffprobePath)
-    }
-
-    setUserDataPath(userDataPath:string){
-        this.tempPath = process.env.NODE_ENV === "development" ? path.join(__dirname, "..", "..", "temp") : path.join(userDataPath, "temp");
-    }
-
-    kill(){
-        killMetadataProcess();
-    }
-
-    async exit(){
-        killMetadataProcess();
-        await exiftool.end();
     }
 
     extractFilesFromArgv(target?:string[]){
@@ -70,7 +55,7 @@ class Util{
 
         if(!fullPaths.length) return {};
 
-        const tags = await getAllComments(this.tempPath, fullPaths)
+        const tags = await metadata.getComments(fullPaths)
 
         if(append){
             this.tags = {...this.tags, ...tags}
@@ -91,7 +76,7 @@ class Util{
     }
 
     async writeTag(fullPath:string, tag:string):Promise<void>{
-        await exiftool.write(fullPath, { Comment: tag }, ["-overwrite_original"])
+        await metadata.setComment(fullPath, tag)
         this.setTag(fullPath, tag)
     }
 

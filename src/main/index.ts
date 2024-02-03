@@ -19,7 +19,6 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 const settings = new Settings(app.getPath("userData"), app.getPreferredSystemLanguages());
-util.setUserDataPath(app.getPath("userData"))
 const helper = new Helper(settings.data);
 const dialogs = new Dialogs(settings.data)
 
@@ -326,7 +325,6 @@ const getCurrentFile = () => {
 }
 
 const reset = () => {
-    util.kill();
     playlistFiles.length = 0;
     randomIndices.length = 0;
     playlistSelection.selectedId = "";
@@ -376,9 +374,8 @@ const saveSettings = () => {
     }
 }
 
-const closeWindow = async () => {
+const closeWindow = () => {
     saveSettings();
-    await util.exit();
     app.quit();
 }
 
