@@ -3565,9 +3565,9 @@ wide-align@^1.1.2:
   dependencies:
     string-width "^1.0.2 || 2 || 3 || 4"
 
-win32props@mrdkprj/metadata#0.2.0:
-  version "0.2.0"
-  resolved "https://codeload.github.com/mrdkprj/metadata/tar.gz/960ae09e1d854257bdf35ba186051d25b60e6199"
+win32props@mrdkprj/metadata#0.3.0:
+  version "0.3.0"
+  resolved "https://codeload.github.com/mrdkprj/metadata/tar.gz/c73c716b3b78976e5bd6f96f4d38ce37ebb17f82"
   dependencies:
     "@mapbox/node-pre-gyp" "^1.0.11"
 
