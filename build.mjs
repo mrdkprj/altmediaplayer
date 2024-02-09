@@ -9,7 +9,6 @@ build({
         ],
         extraResources:[
             "./resources/ffmpeg.exe",
-            //"./resources/ffprobe.exe"
         ],
         includeSubNodeModules:false,
         win:{
