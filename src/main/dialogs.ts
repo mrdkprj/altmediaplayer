@@ -10,22 +10,11 @@ export default class Dialogs{
 
     constructor(settings:Mp.Settings){
         this.settings = settings
-        this.t = translation(this.settings.lang)
+        this.t = translation(this.settings.locale.lang)
     }
 
     async showErrorMessage(ex:any){
         await dialog.showMessageBox({type:"error", message:ex.message})
-    }
-
-    async restartConfirmDialog(window:BrowserWindow){
-        return await dialog.showMessageBox(window, {
-            type:"question",
-            buttons:[this.t("cancel"),this.t("restart")],
-            defaultId:0,
-            cancelId:0,
-            message:this.t("changeLanguageConfirm"),
-            noLink:true,
-        })
     }
 
     openConvertSourceFileDialog(window:BrowserWindow, fullPath:string){

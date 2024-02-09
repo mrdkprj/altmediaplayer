@@ -1,6 +1,6 @@
 {
-  "name": "altmediaplayer",
-  "productName": "altmediaplayer",
+  "name": "altmediaplayer2",
+  "productName": "altmediaplayer2",
   "version": "1.1.1",
   "description": "MediaPlayer",
   "main": "out/main/index.js",
@@ -21,7 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "fluent-ffmpeg": "^2.1.2",
-    "win32metadata": "mrdkprj/metadata#0.1.1"
+    "win32props": "mrdkprj/metadata#0.2.0"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.0.1",

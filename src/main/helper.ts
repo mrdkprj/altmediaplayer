@@ -447,7 +447,7 @@ export default class Helper{
 
     }
 
-    toggleTagContextMenu(parent:Electron.Menu, enable:boolean, selectedFile:Mp.MediaFile | undefined){
+    async toggleTagContextMenu(parent:Electron.Menu, enable:boolean, selectedFile:Mp.MediaFile | undefined){
 
         const menu = parent.getMenuItemById(ADD_TAG_MENU_Id);
 
@@ -457,7 +457,7 @@ export default class Helper{
 
             if(!selectedFile) return
 
-            const tag = util.getTag(selectedFile.fullPath)
+            const tag = await util.getTag(selectedFile.fullPath)
 
             menu.submenu?.items.forEach(menu => {
 

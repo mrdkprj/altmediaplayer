@@ -138,25 +138,14 @@
 
     }
 
-    const beforeDelete = (data:Mp.TrashRequest) => {
+    const releaseFile = (data:Mp.ReleaseFileRequest) => {
 
         if(data.fileIds.includes($appState.currentFile.id)){
+            const currentTime = $appState.media.currentTime;
             initPlayer();
-            afterReleaseCallback = () => window.api.send("trash-ready", {fileIds:data.fileIds})
+            afterReleaseCallback = () => window.api.send("file-released", {currentTime})
         }else{
-            window.api.send("trash-ready", {fileIds:data.fileIds})
-        }
-
-    };
-
-    const beforeRename = (data:Mp.RenameRequest) => {
-
-        if($appState.currentFile.id == data.id){
-            data.currentTime = $appState.media.currentTime;
-            initPlayer();
-            afterReleaseCallback = () => window.api.send("rename-ready", data)
-        }else{
-            window.api.send("rename-ready", data)
+            window.api.send("file-released", {currentTime:0})
         }
 
     }
@@ -471,8 +460,7 @@
         window.api.receive("toggle-play", togglePlay)
         window.api.receive("change-display-mode", onChangeDisplayMode)
         window.api.receive("restart", initPlayer)
-        window.api.receive("before-trash", beforeDelete)
-        window.api.receive("before-rename", beforeRename)
+        window.api.receive("release-file", releaseFile)
         window.api.receive("after-toggle-maximize", onWindowSizeChanged)
         window.api.receive("toggle-convert", toggleConvert)
         window.api.receive("change-playback-speed", changePlaybackSpeed)
@@ -489,8 +477,7 @@
             window.api.removeAllListeners("toggle-play")
             window.api.removeAllListeners("change-display-mode")
             window.api.removeAllListeners("restart")
-            window.api.removeAllListeners("before-trash")
-            window.api.removeAllListeners("before-rename")
+            window.api.removeAllListeners("release-file")
             window.api.removeAllListeners("after-toggle-maximize")
             window.api.removeAllListeners("toggle-convert")
             window.api.removeAllListeners("change-playback-speed")

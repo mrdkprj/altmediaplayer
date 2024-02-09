@@ -8,7 +8,6 @@ export const EmptyFile:Mp.MediaFile = {
     date: 0,
     extension:"",
     dir:"",
-    tag:"",
 }
 
 export const VideoFormats = [

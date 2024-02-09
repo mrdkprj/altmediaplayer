@@ -1,5 +1,3 @@
-import ffmpeg from "fluent-ffmpeg"
-
 declare global {
 
     interface Window {
@@ -33,7 +31,7 @@ declare global {
         "open-convert-sourcefile-dialog": Mp.OpenFileDialogRequest;
         "request-cancel-convert": Mp.Event;
         "rename-file": Mp.RenameRequest;
-        "rename-ready": Mp.RenameRequest;
+        "file-released":Mp.ReleaseFileResult;
         "playlist-item-selection-change": Mp.PlaylistItemSelectionChange;
         "open-sort-context": Mp.Position;
         "media-state-change":Mp.MediaState;
@@ -50,8 +48,7 @@ declare global {
         "change-display-mode": Mp.SettingsChangeEvent;
         "capture-media": Mp.Event;
         "restart": Mp.Event;
-        "before-trash": Mp.TrashRequest;
-        "before-rename": Mp.RenameRequest;
+        "release-file": Mp.ReleaseFileRequest;
         "log": Mp.Logging;
         "after-toggle-maximize": Mp.SettingsChangeEvent;
         "toggle-convert": Mp.Event;
@@ -185,7 +182,6 @@ declare global {
             name:string;
             date:number;
             extension:string;
-            tag:string | undefined;
         }
 
         type MediaState = {
@@ -198,10 +194,6 @@ declare global {
             gainNode: GainNode | null;
             playbackSpeed:number;
             seekSpeed:number;
-        }
-
-        interface FfprobeData extends ffmpeg.FfprobeData {
-            volume?:MediaVolume
         }
 
         type MediaVolume = {
@@ -315,8 +307,12 @@ declare global {
             files:Mp.MediaFile[]
         }
 
-        type TrashRequest = {
+        type ReleaseFileRequest = {
             fileIds:string[];
+        }
+
+        type ReleaseFileResult = {
+            currentTime:number;
         }
 
         type CopyRequest = {
@@ -326,7 +322,6 @@ declare global {
         type RenameRequest = {
             id:string;
             name:string;
-            currentTime?:number;
         }
 
         type RenameResult = {

@@ -79,6 +79,7 @@ const updater = (state: AppState, action: AppAction): AppState => {
         case "currentFile": {
 
             if(action.value.src){
+                action.value.src = action.value.src + `?${new Date().getTime()}`
                 return {...state, currentFile:action.value, loaded:true};
             }
 

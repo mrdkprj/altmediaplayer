@@ -6,6 +6,7 @@ import Helper from "./helper";
 import util from "./util";
 import Settings from "./settings";
 import Dialogs from "./dialogs";
+import Deferred from "./deferred";
 import { EmptyFile, FORWARD, BACKWARD, AudioExtentions } from "../constants";
 
 const locked = app.requestSingleInstanceLock(process.argv);
@@ -42,6 +43,7 @@ let playStatus:Mp.PlayStatus;
 let doShuffle = false;
 let currentIndex = -1;
 let randomIndices:number[] = [];
+let fileReleasePromise:Deferred<number>;
 
 const thumbButtonCallback = (button:Mp.ThumbButtonType) => {
     switch(button){
@@ -103,7 +105,7 @@ const playlistContextMenuCallback = (menu:keyof Mp.PlaylistContextMenuSubTypeMap
             clearPlaylist();
             break;
         case "Trash":
-            beforeTrash(playlistSelection.selectedIds);
+            deleteFile(playlistSelection.selectedIds);
             break;
         case "CopyFileName":
             copyFileNameToClipboard(false);
@@ -269,7 +271,7 @@ const initPlaylist = (fullPaths:string[]) => {
 
     if(!playlistFiles.length) return;
 
-    delayApplyTags(fullPaths, false)
+    //delayApplyTags(fullPaths, false)
 
     currentIndex = 0;
 
@@ -289,7 +291,7 @@ const addToPlaylist = (fullPaths:string[]) => {
 
     playlistFiles.push(...newFiles)
 
-    delayApplyTags(newFiles.map(file => file.fullPath), true)
+    //delayApplyTags(newFiles.map(file => file.fullPath), true)
 
     sortPlayList();
 
@@ -303,16 +305,16 @@ const addToPlaylist = (fullPaths:string[]) => {
 }
 
 // Dont use await
-const delayApplyTags = async (fullPaths:string[], append:boolean) => {
+// const delayApplyTags = async (fullPaths:string[], append:boolean) => {
 
-    const tags = await util.retrieveTags(fullPaths, append)
+//     const tags = await util.retrieveTags(fullPaths, append)
 
-    playlistFiles.filter(file => file.fullPath in tags).forEach(file => {
-        const tag = tags[file.fullPath]
-        file.tag = tag;
-    })
+//     playlistFiles.filter(file => file.fullPath in tags).forEach(file => {
+//         const tag = tags[file.fullPath]
+//         file.tag = tag;
+//     })
 
-}
+// }
 
 const getCurrentFile = () => {
 
@@ -518,27 +520,27 @@ const getIndexAfterRemove = (removeIndices:number[]) => {
 
 }
 
-const beforeTrash = (selectedIds:string[]) => {
+const releaseFile = async (fileIds:string[]) => {
+    respond("Player", "release-file", {fileIds})
+    fileReleasePromise = new Deferred();
+    return await fileReleasePromise.promise
+}
+
+const deleteFile = async (selectedIds:string[]) => {
 
     if(!selectedIds.length) return;
 
-    respond("Player", "before-trash", {fileIds:selectedIds})
-
-}
-
-const deleteFile = async (data:Mp.TrashRequest) => {
-
-    if(!data.fileIds.length) return;
+    await releaseFile(selectedIds);
 
     try{
 
-        const targetFilePaths = playlistFiles.filter(file => data.fileIds.includes(file.id)).map(file => file.fullPath);
+        const targetFilePaths = playlistFiles.filter(file => selectedIds.includes(file.id)).map(file => file.fullPath);
 
         if(!targetFilePaths.length) return;
 
         await Promise.all(targetFilePaths.map(async item => await shell.trashItem(item)))
 
-        removeFromPlaylist(data.fileIds);
+        removeFromPlaylist(selectedIds);
 
     }catch(ex){
         dialogs.showErrorMessage(ex)
@@ -740,13 +742,10 @@ const startConvert = async (data:Mp.ConvertRequest) => {
 }
 
 const endConvert = (message?:string) => {
-
     if(message){
         dialogs.showErrorMessage(message)
     }
-
     respond("Convert", "after-convert", {})
-
 }
 
 const displayMetadata = async () => {
@@ -754,8 +753,8 @@ const displayMetadata = async () => {
     const file = playlistFiles.find(file => file.id == playlistSelection.selectedId)
     if(!file || !Renderers.Player) return;
 
-    const metadata = await util.getMediaMetadata(file.fullPath)
-    const metadataString = JSON.stringify(metadata, undefined, 2);
+    const metadata = await util.getMediaMetadata(file.fullPath, true)
+    const metadataString = JSON.stringify(metadata, undefined, 2).replaceAll('"',"");
     const result = await dialogs.metadataDialog(Renderers.Player, metadataString)
     if(result.response === 0){
         clipboard.writeText(metadataString);
@@ -775,21 +774,30 @@ const saveTags = (e:Mp.SaveTagsEvent) => {
 const closeTagEditor = () => Renderers.Tag?.hide();
 
 const addTagToFile = async (tag:string) => {
-    const file = playlistFiles.find(file => file.id == playlistSelection.selectedId)
-    if(file){
-        try{
-            await util.writeTag(file.fullPath, tag)
-        }catch(ex:any){
-            dialogs.showErrorMessage(ex)
+
+    const fileIndex = playlistFiles.findIndex(file => file.id == playlistSelection.selectedId)
+
+    if(fileIndex < 0) return;
+
+    const currentTime = await releaseFile([playlistFiles[fileIndex].id])
+
+    try{
+        await util.writeTag(playlistFiles[fileIndex], tag)
+    }catch(ex:any){
+        dialogs.showErrorMessage(ex)
+    }finally{
+        if(fileIndex == currentIndex){
+            loadMediaFile(currentTime)
         }
     }
+
 }
 
-const toggleCommentMenu = () => {
+const toggleCommentMenu = async () => {
 
     const file = playlistFiles.find(file => file.id == playlistSelection.selectedIds[0])
 
-    helper.toggleTagContextMenu(playlistMenu, playlistSelection.selectedIds.length == 1, file)
+    await helper.toggleTagContextMenu(playlistMenu, playlistSelection.selectedIds.length == 1, file)
 
 }
 
@@ -832,11 +840,9 @@ const fromPlaylistJson = (jsonData:string) => {
     }
 }
 
-const beforeRename = async (data:Mp.RenameRequest) => {
-    respond("Player", "before-rename", data)
-}
-
 const renameFile = async (data:Mp.RenameRequest) => {
+
+    const currentTime = await releaseFile([data.id]);
 
     const fileIndex = playlistFiles.findIndex(file => file.id == data.id)
     const file = playlistFiles[fileIndex];
@@ -856,15 +862,12 @@ const renameFile = async (data:Mp.RenameRequest) => {
 
         respond("Playlist", "after-rename", {file:newMediaFile})
 
-        if(fileIndex == currentIndex){
-            loadMediaFile(data.currentTime)
-        }
-
     }catch(ex){
         await dialogs.showErrorMessage(ex)
         respond("Playlist", "after-rename", {file:file, error:true})
+    }finally{
         if(fileIndex == currentIndex){
-            loadMediaFile(data.currentTime)
+            loadMediaFile(currentTime)
         }
     }
 }
@@ -894,8 +897,8 @@ const onPlaylistItemSelectionChange = (data:Mp.PlaylistItemSelectionChange) => {
     playlistSelection.selectedIds = data.selection.selectedIds
 }
 
-const onOpenPlaylistContext = () => {
-    toggleCommentMenu();
+const onOpenPlaylistContext = async () => {
+    await toggleCommentMenu();
     playlistMenu.popup({window:Renderers.Playlist ?? undefined})
 }
 
@@ -927,6 +930,10 @@ const onShortcut = (e:Mp.ShortcutEvent) => {
     }
 }
 
+const onReleaseFile = (data:Mp.ReleaseFileResult) => {
+    fileReleasePromise.resolve(data.currentTime);
+}
+
 const registerIpcChannels = () => {
 
     const addEventHandler = <K extends keyof MainChannelEventMap>(
@@ -951,8 +958,8 @@ const registerIpcChannels = () => {
     addEventHandler("playlist-item-selection-change", onPlaylistItemSelectionChange)
     addEventHandler("open-sort-context", openSortContextMenu)
     addEventHandler("trash-ready", deleteFile)
-    addEventHandler("rename-file", beforeRename);
-    addEventHandler("rename-ready", renameFile);
+    addEventHandler("rename-file", renameFile);
+    addEventHandler("file-released", onReleaseFile);
     addEventHandler("open-playlist-context", onOpenPlaylistContext)
     addEventHandler("change-playlist-order", changePlaylistItemOrder)
     addEventHandler("toggle-play", togglePlay)
