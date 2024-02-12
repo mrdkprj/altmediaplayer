@@ -2,9 +2,10 @@
 
     import { onMount } from "svelte";
     import { appState, dispatch } from "./appStateReducer";
-    import { useTranslation } from "../../translation/useTranslation"
+    import { t, lang } from "../../translation/useTranslation"
 
-    import { FORWARD, BACKWARD, APP_NAME, handleKeyEvent } from "../../constants";
+    import { FORWARD, BACKWARD, APP_NAME, Buttons, handleKeyEvent } from "../../constants";
+    import { getDropFiles } from "../fileDropHandler";
     import { handleShortcut } from "../shortcut";
     import Footer from "./Footer.svelte";
     import icon from "../../assets/icon.ico"
@@ -12,14 +13,7 @@
     let video:HTMLVideoElement
     let container:HTMLDivElement
     let hideControlTimeout:number | null
-    let lang:Mp.Lang = "en";
-
-    const Buttons = {
-        left:0,
-        right:2,
-    }
-
-    const t = useTranslation(lang);
+    let afterReleaseCallback:(() => void) | undefined;
 
     const updateTime = (progress:number) => {
 
@@ -47,6 +41,7 @@
         video.volume = volume
         dispatch({type:"videoVolume", value:volume})
 
+        window.api.send("media-state-change", $appState.media)
     }
 
     const getGainNode = () => {
@@ -76,64 +71,41 @@
 
         dispatch({type:"ampLevel", value:ampLevel})
 
+        window.api.send("media-state-change", $appState.media)
+
         gainNode.gain.value = ampLevel * 10;
 
     }
 
+    const toggleMute = () => {
+        dispatch({type:"mute", value:!$appState.media.mute})
+        window.api.send("media-state-change", $appState.media)
+    }
+
     const onFileDrop = (e:DragEvent) => {
 
-        e.preventDefault();
+        const files = getDropFiles(e)
 
-        const items = e.dataTransfer ? e.dataTransfer.items : []
-
-        const dropItems = Array.from(items).filter(item => {
-            return item.kind === "file" && (item.type.includes("video") || item.type.includes("audio"));
-        })
-
-        if(dropItems.length){
-            const files = dropItems.map(item => item.getAsFile()?.path ?? "")
+        if(files.length){
             window.api.send("drop", {files, renderer:"Player"})
         }
     }
 
     const initPlayer = () => {
-
-        dispatch({type:"currentFile", value:null})
-        dispatch({type:"videoDuration", value:0})
-        dispatch({type:"playing", value:false})
-        dispatch({type:"currentTime", value:0})
-        dispatch({type:"loaded", value:false})
+        dispatch({type:"init"})
         video.load();
-
-    }
-
-    const beforeDelete = (data:Mp.TrashRequest) => {
-
-        if(data.fileIds.includes($appState.currentFile.id)){
-            dispatch({type:"currentFile", value:null})
-        }
-        window.api.send("trash-ready", {fileIds:data.fileIds})
-
-    };
-
-    const beforeRename = (data:Mp.RenameRequest) => {
-
-        if($appState.currentFile.id == data.id){
-            data.currentTime = $appState.media.currentTime;
-            dispatch({type:"currentFile", value:null})
-        }
-        window.api.send("rename-ready", data)
     }
 
     const loadMedia = (e:Mp.FileLoadEvent) => {
 
         dispatch({type:"currentFile", value:e.currentFile})
-
-        video.autoplay = e.autoPlay ? e.autoPlay : $appState.playing;
-        video.muted = $appState.media.mute;
-        video.playbackRate = $appState.media.playbackSpeed
+        dispatch({type:"playStatus", value:e.status})
         dispatch({type:"currentTime", value:0})
         dispatch({type:"startFrom", value:e.startFrom})
+
+        video.autoplay = e.status == "playing"
+        video.muted = $appState.media.mute;
+        video.playbackRate = $appState.media.playbackSpeed
 
         video.load();
 
@@ -157,7 +129,28 @@
 
     }
 
-    const changeVideoSize = (config?:Mp.Config) => {
+    const onEmptied = () => {
+
+        if(!afterReleaseCallback) return
+
+        afterReleaseCallback();
+        afterReleaseCallback = undefined;
+
+    }
+
+    const releaseFile = (data:Mp.ReleaseFileRequest) => {
+
+        if(data.fileIds.includes($appState.currentFile.id)){
+            const currentTime = $appState.media.currentTime;
+            initPlayer();
+            afterReleaseCallback = () => window.api.send("file-released", {currentTime})
+        }else{
+            window.api.send("file-released", {currentTime:0})
+        }
+
+    }
+
+    const changeVideoSize = (config?:Mp.Settings) => {
 
         const fitToWindow = config ? config.video.fitToWindow : $appState.media.fitToWindow
         const containerRect = container.getBoundingClientRect();
@@ -193,11 +186,11 @@
 
         if(!$appState.loaded) return;
 
-        if(button === 0){
+        if(button === Buttons.left){
             changeCurrentTime($appState.media.seekSpeed);
         }
 
-        if(button === 2){
+        if(button === Buttons.right){
             changeFile(FORWARD)
         }
 
@@ -207,18 +200,18 @@
 
         if(!$appState.loaded) return;
 
-        if(button === 0){
+        if(button === Buttons.left){
             changeCurrentTime(-$appState.media.seekSpeed)
         }
 
-        if(button === 2){
+        if(button === Buttons.right){
             changeFile(BACKWARD)
         }
 
     }
 
     const changeFile = (index:number) => {
-        return window.api.send("load-file", {index, isAbsolute:false})
+        window.api.send("load-file", {index, isAbsolute:false})
     }
 
     const togglePlay = () => {
@@ -235,7 +228,7 @@
 
     const onPlayed = () => {
         window.api.send("play-status-change", {status:"playing"})
-        dispatch({type:"playing", value:true})
+        dispatch({type:"playStatus", value:"playing"})
     }
 
     const onPaused = () => {
@@ -243,7 +236,7 @@
         if(video.currentTime == video.duration) return;
 
         window.api.send("play-status-change", {status:"paused"})
-        dispatch({type:"playing", value:false})
+        dispatch({type:"playStatus", value:"paused"})
     }
 
     const stop = () => {
@@ -251,7 +244,7 @@
         if(!$appState.loaded) return;
 
         window.api.send("play-status-change", {status:"stopped"})
-        dispatch({type:"playing", value:false})
+        dispatch({type:"playStatus", value:"stopped"})
         video.load();
 
     }
@@ -290,10 +283,6 @@
 
     }
 
-    const toggleMute = () => {
-        dispatch({type:"mute", value:!$appState.media.mute})
-    }
-
     const minimize = () => {
         window.api.send("minimize", {})
     }
@@ -303,8 +292,8 @@
         dispatch({type:"isMaximized", value:!$appState.isMaximized})
     }
 
-    const onWindowSizeChanged = (e:Mp.ConfigChangeEvent) => {
-        dispatch({type:"isMaximized", value:e.config.isMaximized})
+    const onWindowSizeChanged = (e:Mp.SettingsChangeEvent) => {
+        dispatch({type:"isMaximized", value:e.settings.isMaximized})
     }
 
     const hideControl = () => {
@@ -354,27 +343,29 @@
         dispatch({type:"converting"})
     }
 
-    const onChangeDisplayMode = (e:Mp.ConfigChangeEvent) => {
-        dispatch({type:"fitToWindow", value:e.config.video.fitToWindow})
-        changeVideoSize(e.config);
+    const onChangeDisplayMode = (e:Mp.SettingsChangeEvent) => {
+        dispatch({type:"fitToWindow", value:e.settings.video.fitToWindow})
+        changeVideoSize(e.settings);
     }
 
     const close = () => {
-        window.api.send("close", {mediaState:$appState.media});
+        window.api.send("close", {});
     }
 
     const prepare = (e:Mp.ReadyEvent) => {
 
-        dispatch({type:"isMaximized", value:e.config.isMaximized})
+        $lang = e.settings.locale.lang;
 
-        updateVolume(e.config.audio.volume);
-        updateAmpLevel(e.config.audio.ampLevel)
+        dispatch({type:"isMaximized", value:e.settings.isMaximized})
 
-        dispatch({type:"mute", value:e.config.audio.mute})
+        updateVolume(e.settings.audio.volume);
+        updateAmpLevel(e.settings.audio.ampLevel)
 
-        dispatch({type:"fitToWindow", value:e.config.video.fitToWindow})
-        dispatch({type:"playbackSpeed", value:e.config.video.playbackSpeed})
-        dispatch({type:"seekSpeed", value:e.config.video.seekSpeed})
+        dispatch({type:"mute", value:e.settings.audio.mute})
+
+        dispatch({type:"fitToWindow", value:e.settings.video.fitToWindow})
+        dispatch({type:"playbackSpeed", value:e.settings.video.playbackSpeed})
+        dispatch({type:"seekSpeed", value:e.settings.video.seekSpeed})
 
         initPlayer();
 
@@ -469,8 +460,7 @@
         window.api.receive("toggle-play", togglePlay)
         window.api.receive("change-display-mode", onChangeDisplayMode)
         window.api.receive("restart", initPlayer)
-        window.api.receive("before-trash", beforeDelete)
-        window.api.receive("before-rename", beforeRename)
+        window.api.receive("release-file", releaseFile)
         window.api.receive("after-toggle-maximize", onWindowSizeChanged)
         window.api.receive("toggle-convert", toggleConvert)
         window.api.receive("change-playback-speed", changePlaybackSpeed)
@@ -487,8 +477,7 @@
             window.api.removeAllListeners("toggle-play")
             window.api.removeAllListeners("change-display-mode")
             window.api.removeAllListeners("restart")
-            window.api.removeAllListeners("before-trash")
-            window.api.removeAllListeners("before-rename")
+            window.api.removeAllListeners("release-file")
             window.api.removeAllListeners("after-toggle-maximize")
             window.api.removeAllListeners("toggle-convert")
             window.api.removeAllListeners("change-playback-speed")
@@ -504,9 +493,9 @@
 <svelte:window on:keydown={onKeydown} on:resize={onResize}/>
 <svelte:document on:mousemove={onMousemove}/>
 
-<div class="viewport" class:full-screen={$appState.isFullScreen} class:loaded={$appState.loaded} class:autohide={$appState.autohide}>
+<div class="player-viewport" class:full-screen={$appState.isFullScreen} class:loaded={$appState.loaded} class:autohide={$appState.autohide}>
 
-    <div class="title-bar">
+    <div class="player-title-bar">
         <div class="icon-area">
             <img class="ico" src={icon} alt=""/>
             <span>{APP_NAME}</span>
@@ -532,6 +521,7 @@
             on:play={onPlayed}
             on:pause={onPaused}
             on:contextmenu={onContextMenu}
+            on:emptied={onEmptied}
             muted={$appState.media.mute}
         />
     </div>
@@ -546,7 +536,7 @@
         onClickPrevious={playBackward}
         onClickNext={playFoward}
         onClickMute={toggleMute}
-        t={t}
+        t={$t}
     />
 
 </div>

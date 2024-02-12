@@ -1,4 +1,4 @@
-.title-bar{
+.player-title-bar{
     height:25px;
     width: 100%;
     display: flex;
@@ -11,7 +11,7 @@
     -webkit-app-region: drag;
 }
 
-.full-screen .title-bar{
+.full-screen .player-title-bar{
     display: none;
 }
 
@@ -100,7 +100,7 @@
     color: var(--close-hover-color);
 }
 
-.viewport{
+.player-viewport{
     display:flex;
     flex-direction: column;
     height: 100%;

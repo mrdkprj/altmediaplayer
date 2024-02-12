@@ -2,15 +2,14 @@
 
     import { onMount } from "svelte";
     import List from "./List.svelte";
+
+    import { getDropFiles } from "../fileDropHandler";
     import { handleShortcut } from "../shortcut"
-    import { handleKeyEvent } from "../../constants";
+    import { handleKeyEvent, Buttons } from "../../constants";
     import { appState, dispatch } from "./appStateReducer";
-    import { useTranslation } from "../../translation/useTranslation"
+    import { t, lang } from "../../translation/useTranslation"
 
     let fileListContainer:HTMLDivElement;
-    let lang:Mp.Lang = "en";
-
-    const t = useTranslation(lang);
 
     const List_Item_Padding = 10;
 
@@ -36,7 +35,7 @@
 
         if(!e.target || !(e.target instanceof HTMLElement)) return;
 
-        if(e.button === 2 && $appState.selection.selectedIds.length > 1){
+        if(e.button === Buttons.right && $appState.selection.selectedIds.length > 1){
             if($appState.selection.selectedIds.includes(e.target.id)){
                 return;
             }
@@ -50,17 +49,9 @@
 
         if($appState.dragState.dragging) return;
 
-        e.preventDefault();
-        e.stopPropagation();
+        const files = getDropFiles(e)
 
-        const items = e.dataTransfer ? e.dataTransfer.items : []
-
-        const dropItems = Array.from(items).filter(item => {
-            return item.kind === "file" && (item.type.includes("video") || item.type.includes("audio"));
-        })
-
-        if(dropItems.length){
-            const files = dropItems.map(item => item.getAsFile()?.path ?? "")
+        if(files.length){
             window.api.send("drop", {files, renderer:"Playlist"})
         }
     }
@@ -70,10 +61,8 @@
     }
 
     const clearSelection = () => {
-
         dispatch({type:"clearSelection"})
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
-
+        sendSelection()
     }
 
     const getChildIndex = (id:string | null | undefined) => {
@@ -105,7 +94,7 @@
 
         clearSelection();
 
-        dispatch({type:"files", value:{files:data.files, type:"Append"}})
+        dispatch({type:"files", value:data.files})
 
         if(shouldRestoreSelection && $appState.files.length){
             const nextId = selectedIndex > $appState.files.length - 1 ? $appState.files[selectedIndex - 1].id : $appState.files[selectedIndex].id
@@ -140,7 +129,7 @@
 
         scrollToElement(id)
 
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+        sendSelection()
 
     }
 
@@ -171,7 +160,7 @@
 
         dispatch({type:"setSelectedIds", value:ids})
 
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+        sendSelection()
 
     }
 
@@ -184,7 +173,7 @@
 
         dispatch({type:"updatSelectedIds", value:[id]})
 
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+        sendSelection()
     }
 
     const selectAll = () => {
@@ -195,7 +184,7 @@
 
         dispatch({type:"updatSelectedIds", value:ids})
 
-        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+        sendSelection()
 
     }
 
@@ -253,9 +242,15 @@
 
     }
 
+    const sendSelection = () => {
+        window.api.send("playlist-item-selection-change", {selection:$appState.selection})
+    }
+
     const changeCurrent = (e:Mp.FileLoadEvent) => {
         dispatch({type:"playlingItemId", value:e.currentFile.id})
-        select(e.currentFile.id)
+        if(e.currentFile.id){
+            select(e.currentFile.id)
+        }
     }
 
     const setInputFocus = (node:HTMLInputElement) => {
@@ -373,7 +368,7 @@
     }
 
     const addToPlaylist = (e:Mp.PlaylistChangeEvent) => {
-        dispatch({type:"files", value:{files:e.files, type:e.type}})
+        dispatch({type:"files", value:e.files})
     }
 
     const applySortType = (sortType:Mp.SortType) => {
@@ -381,8 +376,8 @@
     }
 
     const prepare = (e:Mp.ReadyEvent) => {
-        lang = e.config.lang;
-        applySortType(e.config.sort)
+        $lang = e.settings.locale.lang;
+        applySortType(e.settings.sort)
     }
 
     const close = () => {
@@ -452,9 +447,9 @@
 
 <svelte:window on:contextmenu={onContextMenu} on:keydown={onKeydown}/>
 
-<div class="playlist">
-    <div class="playlist-title-bar">
-        <div class="playlist-close-btn" on:click={close} on:keydown={handleKeyEvent} role="button" tabindex="-1">&times;</div>
+<div class="viewport">
+    <div class="title-bar">
+        <div class="close-btn" on:click={close} on:keydown={handleKeyEvent} role="button" tabindex="-1">&times;</div>
     </div>
     <div class="playlist-viewport" class:group-by={$appState.sortType.groupBy} bind:this={fileListContainer} role="button" tabindex="-1" on:drop={onFileDrop} on:dragover={e => e.preventDefault()}>
         {#if $appState.rename.renaming}
@@ -472,13 +467,13 @@
         <List onMouseDown={onPlaylistItemMousedown} scrollToElement={scrollToElement} getChildIndex={getChildIndex}/>
     </div>
     <div class="playlist-footer" class:shuffle={$appState.shuffle}>
-        <div class="btn shuffle-btn" title={t("shuffle")} on:click={toggleShuffle} on:keydown={handleKeyEvent} role="button" tabindex="-1">
+        <div class="btn shuffle-btn" title={$t("shuffle")} on:click={toggleShuffle} on:keydown={handleKeyEvent} role="button" tabindex="-1">
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"/>
                 <path d="M13 5.466V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192zm0 9v-3.932a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"/>
             </svg>
         </div>
-        <div class="btn" title={t("sort")} on:click={openSortMenu} on:keydown={handleKeyEvent} role="button" tabindex="-1">
+        <div class="btn" title={$t("sort")} on:click={openSortMenu} on:keydown={handleKeyEvent} role="button" tabindex="-1">
             {#if $appState.sortType.order == "NameAsc"}
                 <svg xmlns="http://www.w3.org/2000/svg" id="nameAsc" fill="currentColor" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M10.082 5.629 9.664 7H8.598l1.789-5.332h1.234L13.402 7h-1.12l-.419-1.371h-1.781zm1.57-.785L11 2.687h-.047l-.652 2.157h1.351z"/>

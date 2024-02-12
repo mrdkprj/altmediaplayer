@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, nativeImage } from "electron"
+import { BrowserWindow, Menu, MenuItem, nativeImage } from "electron"
 import path from "path"
 import { translation } from "../translation/translation";
 import icon from "../assets/icon.ico"
@@ -6,6 +6,7 @@ import play from "../assets/play.png"
 import pause from "../assets/pause.png"
 import forward from "../assets/forward.png"
 import backward from "../assets/backward.png"
+import util from "./util";
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -19,23 +20,25 @@ const load = (window:BrowserWindow, name:RendererName) => {
 
 }
 
+export const ADD_TAG_MENU_Id = "addTag"
+
 export default class Helper{
 
-    config:Mp.Config;
-    t:(key:keyof Mp.label) => string;
+    private settings:Mp.Settings;
+    private t:(key:keyof Mp.Labels) => string;
 
-    constructor(config:Mp.Config){
-        this.config = config;
-        this.t = translation(this.config.lang)
+    constructor(settings:Mp.Settings){
+        this.settings = settings;
+        this.t = translation(this.settings.locale.lang)
     }
 
     createPlayerWindow(){
 
         const window = new BrowserWindow({
-            width: this.config.bounds.width,
-            height: this.config.bounds.height,
-            x:this.config.bounds.x,
-            y:this.config.bounds.y,
+            width: this.settings.bounds.width,
+            height: this.settings.bounds.height,
+            x:this.settings.bounds.x,
+            y:this.settings.bounds.y,
             autoHideMenuBar: true,
             show: false,
             icon: nativeImage.createFromDataURL(icon),
@@ -58,10 +61,10 @@ export default class Helper{
 
         const window = new BrowserWindow({
             parent,
-            width: this.config.playlistBounds.width,
-            height: this.config.playlistBounds.height,
-            x:this.config.playlistBounds.x,
-            y:this.config.playlistBounds.y,
+            width: this.settings.playlistBounds.width,
+            height: this.settings.playlistBounds.height,
+            x:this.settings.playlistBounds.x,
+            y:this.settings.playlistBounds.y,
             autoHideMenuBar: true,
             show: false,
             frame:false,
@@ -107,7 +110,34 @@ export default class Helper{
         return window;
     }
 
-    createPlayerContextMenu(onclick: (menu:Mp.PlayerContextMenuType, args?:any) => void){
+    createTagEditorWindow(parent:BrowserWindow){
+
+        const window = new BrowserWindow({
+            parent,
+            width:400,
+            height:600,
+            minHeight: 250,
+            resizable: true,
+            autoHideMenuBar: true,
+            show: false,
+            frame:false,
+            modal:false,
+            minimizable: false,
+            maximizable: false,
+            fullscreenable:false,
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true,
+                preload: path.join(__dirname, "../preload/preload.js"),
+            },
+        })
+
+        load(window, "Tag")
+
+        return window;
+    }
+
+    createPlayerContextMenu(onclick: Mp.PlayerContextMenuCallback<keyof Mp.PlayerContextMenuSubTypeMap>){
 
         const template:Electron.MenuItemConstructorOptions[] = [
             {
@@ -121,7 +151,7 @@ export default class Helper{
             {
                 label: this.t("fitToWindow"),
                 type: "checkbox",
-                checked: this.config.video.fitToWindow,
+                checked: this.settings.video.fitToWindow,
                 click: () => onclick("FitToWindow"),
             },
             { type: "separator" },
@@ -150,27 +180,26 @@ export default class Helper{
                 label: this.t("theme"),
                 submenu:this.themeMenu(onclick)
             },
-
         ]
 
         return Menu.buildFromTemplate(template)
     }
 
-    private themeMenu(onclick: (menu:Mp.PlayerContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    private themeMenu(onclick: Mp.PlayerContextMenuCallback<"Theme">){
         const type = "Theme"
         const template:Electron.MenuItemConstructorOptions[] = [
             {
                 id: "themeLight",
                 label: this.t("light"),
                 type:"checkbox",
-                checked: this.config.theme === "light",
+                checked: this.settings.theme === "light",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "light"))
             },
             {
                 id: "themeDark",
                 label: this.t("dark"),
                 type:"checkbox",
-                checked: this.config.theme === "dark",
+                checked: this.settings.theme === "dark",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "dark"))
             },
         ]
@@ -178,7 +207,7 @@ export default class Helper{
         return Menu.buildFromTemplate(template);
     }
 
-    private playbackSpeedMenu(onclick: (menu:Mp.PlayerContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    private playbackSpeedMenu(onclick: Mp.PlayerContextMenuCallback<"PlaybackSpeed">){
 
         const type = "PlaybackSpeed"
         const template:Electron.MenuItemConstructorOptions[] = [
@@ -236,7 +265,7 @@ export default class Helper{
         return Menu.buildFromTemplate(template);
     }
 
-    private seekSpeedMenu(onclick: (menu:Mp.PlayerContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    private seekSpeedMenu(onclick: Mp.PlayerContextMenuCallback<"SeekSpeed">){
 
         const type = "SeekSpeed"
         const template:Electron.MenuItemConstructorOptions[] = [
@@ -300,7 +329,7 @@ export default class Helper{
         return Menu.buildFromTemplate(template);
     }
 
-    createPlaylistContextMenu(onclick: (menu:Mp.PlaylistContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    createPlaylistContextMenu(onclick: Mp.PlaylistContextMenuCallback<keyof Mp.PlaylistContextMenuSubTypeMap>){
 
         const template:Electron.MenuItemConstructorOptions[] = [
             {
@@ -343,11 +372,16 @@ export default class Helper{
                 label: this.t("convert"),
                 click: () => onclick("Convert")
             },
-            // { type: "separator" },
-            // {
-            //     label:"Tag":
-            //     submenu:this.createTagContextMenu(onclick)
-            // }
+            { type: "separator" },
+            {
+                id:ADD_TAG_MENU_Id,
+                label: this.t("tags"),
+                submenu:this.createTagContextMenu(onclick)
+            },
+            {
+                label: this.t("manageTag"),
+                click: () => onclick("ManageTags")
+            },
             { type: "separator" },
             {
                 label: this.t("loadList"),
@@ -367,17 +401,77 @@ export default class Helper{
         return Menu.buildFromTemplate(template);
     }
 
-    createTagContextMenu(onclick: (menu:Mp.PlaylistContextMenuType, args?:Mp.ContextMenuSubType) => void){
-        const template:Electron.MenuItemConstructorOptions[] = this.config.tags.map(tag => {
+    private createTagContextMenu(onclick: Mp.PlaylistContextMenuCallback<"Tag">){
+        const template:Electron.MenuItemConstructorOptions[] = this.settings.tags.sort().map(tag => {
                 return {
+                    id:tag,
                     label: tag,
-                    click: () => onclick("RemoveAll")
+                    type:"checkbox",
+                    click: () => onclick("Tag", tag)
                 }
-            })
+        })
         return Menu.buildFromTemplate(template);
     }
 
-    createPlaylistSortContextMenu(onclick: (menu:Mp.PlaylistContextMenuType, args?:Mp.ContextMenuSubType) => void){
+    refreshTagContextMenu(parent:Electron.Menu, tags:string[], onclick: Mp.PlaylistContextMenuCallback<"Tag">){
+
+        const menu = parent.getMenuItemById(ADD_TAG_MENU_Id);
+
+        if(menu && menu.submenu){
+            const menuItemMap = menu.submenu.items.reduce((obj:{[key:string]:Electron.MenuItem}, item) => (obj[item.id] = item, obj), {})
+            const keys = [...new Set([...tags,...Object.keys(menuItemMap)])].sort()
+
+            keys.forEach((key,index) => {
+
+                if(menuItemMap[key] && tags.includes(key)){
+                    menuItemMap[key].enabled = true;
+                }
+
+                if(menuItemMap[key] && !tags.includes(key)){
+                    menuItemMap[key].enabled = false;
+                }
+
+                if(!menuItemMap[key] && tags.includes(key)){
+                    const item = new MenuItem({
+                        id:key,
+                        label: key,
+                        type:"checkbox",
+                        click: () => onclick("Tag", key)
+                    })
+                    menu.submenu?.insert(index, item)
+                }
+
+            })
+
+        }
+
+    }
+
+    async toggleTagContextMenu(parent:Electron.Menu, enable:boolean, selectedFile:Mp.MediaFile | undefined){
+
+        const menu = parent.getMenuItemById(ADD_TAG_MENU_Id);
+
+        if(menu){
+
+            menu.enabled = enable
+
+            if(!selectedFile) return
+
+            const tag = await util.getTag(selectedFile.fullPath)
+
+            menu.submenu?.items.forEach(menu => {
+
+                if(menu.id == tag){
+                    menu.checked = true;
+                }else{
+                    menu.checked = false;
+                }
+            })
+
+        }
+    }
+
+    createPlaylistSortContextMenu(onclick: Mp.PlaylistContextMenuCallback<"Sort" | "GroupBy">){
 
         const type = "Sort"
         const toggleExcepts = ["groupby"]
@@ -386,7 +480,7 @@ export default class Helper{
                 id:"groupby",
                 label: this.t("groupBy"),
                 type: "checkbox",
-                checked: this.config.sort.groupBy,
+                checked: this.settings.sort.groupBy,
                 click: () => onclick("GroupBy")
             },
             { type: "separator" },
@@ -394,28 +488,28 @@ export default class Helper{
                 id: "NameAsc",
                 label: this.t("nameAsc"),
                 type: "checkbox",
-                checked: this.config.sort.order === "NameAsc",
+                checked: this.settings.sort.order === "NameAsc",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "NameAsc"), toggleExcepts)
             },
             {
                 id: "NameDesc",
                 label: this.t("nameDesc"),
                 type: "checkbox",
-                checked: this.config.sort.order === "NameDesc",
+                checked: this.settings.sort.order === "NameDesc",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"NameDesc"), toggleExcepts)
             },
             {
                 id: "DateAsc",
                 label: this.t("dateAsc"),
                 type: "checkbox",
-                checked: this.config.sort.order === "DateAsc",
+                checked: this.settings.sort.order === "DateAsc",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateAsc"), toggleExcepts)
             },
             {
                 id: "DateDesc",
                 label: this.t("dateDesc"),
                 type: "checkbox",
-                checked: this.config.sort.order === "DateDesc",
+                checked: this.settings.sort.order === "DateDesc",
                 click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateDesc"), toggleExcepts)
             },
         ]

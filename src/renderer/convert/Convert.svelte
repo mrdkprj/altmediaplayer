@@ -4,12 +4,9 @@
     import RadioGroup from "./RadioGroup.svelte";
     import { AudioExtentions } from "../../constants";
     import { reducer, initialAppState } from "./appStateReducer";
-    import { useTranslation } from "../../translation/useTranslation";
-
-    let lang:Mp.Lang = "en";
+    import { t, lang } from "../../translation/useTranslation"
 
     const { appState, dispatch } = reducer(initialAppState);
-    const t = useTranslation(lang);
 
     const beforeOpen = (e:Mp.OpenConvertDialogEvent) => {
         if(!$appState.converting){
@@ -101,7 +98,7 @@
     }
 
     const prepare = (e:Mp.ReadyEvent) => {
-        lang = e.config.lang
+        $lang = e.settings.locale.lang
     }
 
     onMount(() => {
@@ -122,13 +119,13 @@
 
 <svelte:window on:keydown={onKeydown} />
 
-<div class="convert">
-    <div class="convert-title-bar">
-        <div class="convert-close-btn" on:click={closeDialog} on:keydown={onKeydown} role="button" tabindex="-1">&times;</div>
+<div class="viewport">
+    <div class="title-bar">
+        <div class="close-btn" on:click={closeDialog} on:keydown={onKeydown} role="button" tabindex="-1">&times;</div>
     </div>
     <div class="convert-viewport">
         <div class="container">
-            <div class="option-label">{t("inputFile")}</div>
+            <div class="option-label">{$t("inputFile")}</div>
             <div class="option-area">
                 <div class="text">
                     <input type="text" class="source-file-input" readonly value={$appState.sourceFile}/>
@@ -139,7 +136,7 @@
                     </div>
                 </div>
             </div>
-            <div class="option-label">{t("convertFormat")}</div>
+            <div class="option-label">{$t("convertFormat")}</div>
             <div class="option-area">
                 <RadioGroup
                     options={["MP4","MP3"]}
@@ -152,7 +149,7 @@
             </div>
             {#if $appState.convertFormat == "MP4"}
                 <div class="video-options">
-                    <div class="option-label">{t("frameSize")}</div>
+                    <div class="option-label">{$t("frameSize")}</div>
                     <div class="option-area">
                         <RadioGroup
                             options={["SizeNone","360p","480p","720p","1080p"]}
@@ -162,7 +159,7 @@
                             onChange={onFrameSizeChange}
                         />
                     </div>
-                    <div class="option-label">{t("videoRotation")}</div>
+                    <div class="option-label">{$t("videoRotation")}</div>
                     <div class="option-area">
                         <RadioGroup
                             options={["RotationNone", "90Clockwise", "90CounterClockwise"]}
@@ -175,7 +172,7 @@
                 </div>
             {/if}
             <div class="audio-options">
-                <div class="option-label">{t("audioBitrate")}</div>
+                <div class="option-label">{$t("audioBitrate")}</div>
                 <div class="option-area">
                     <RadioGroup
                         options={["BitrateNone","128", "160", "192", "320"]}
@@ -185,7 +182,7 @@
                         onChange={onChangeAudioBitrate}
                     />
                 </div>
-                <div class="option-label">{t("volume")}<label><input type="checkbox" class="max-volume" on:change={onMaxVolumeChange}/>{t("maximizeVolue")}</label></div>
+                <div class="option-label">{$t("volume")}<label><input type="checkbox" class="max-volume" on:change={onMaxVolumeChange}/>{$t("maximizeVolue")}</label></div>
                 <div class="option-area">
                     <input type="range" min="1" max="5" step="0.5" value={$appState.audioVolume} on:change={onVolumeChange} disabled={$appState.maxVolume}/>
                     <span id="volumeLabel">{`${parseFloat($appState.audioVolume) * 100}%`}</span>
@@ -193,9 +190,9 @@
             </div>
 
             <div class="button">
-                <button disabled={$appState.converting} on:click={requestConvert}>{t("start")}</button>
-                <button disabled={!$appState.converting} on:click={requestCancelConvert}>{t("cancel")}</button>
-                <button on:click={closeDialog}>{t("close")}</button>
+                <button disabled={$appState.converting} on:click={requestConvert}>{$t("start")}</button>
+                <button disabled={!$appState.converting} on:click={requestCancelConvert}>{$t("cancel")}</button>
+                <button on:click={closeDialog}>{$t("close")}</button>
             </div>
         </div>
     </div>

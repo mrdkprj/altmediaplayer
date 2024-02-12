@@ -2,13 +2,15 @@ import fs from "fs"
 import path from "path";
 import crypto from "crypto"
 import ffmpeg from "fluent-ffmpeg"
+import win32props from "win32props"
 import { Resolutions, Rotations } from "../constants";
 
-export default class Util{
+class Util{
 
     private convertDestFile:string | null;
     private command:ffmpeg.FfmpegCommand | null;
     private isDev:boolean;
+    private tags:Map<string, string> = new Map();
 
     constructor(){
         this.convertDestFile = null;
@@ -17,10 +19,7 @@ export default class Util{
         const resourcePath = this.isDev ? path.join(__dirname, "..", "..", "resources") : path.join(process.resourcesPath, "resources")
 
         const ffmpegPath = path.join(resourcePath, "ffmpeg.exe")
-        const ffprobePath = path.join(resourcePath, "ffprobe.exe")
-
         ffmpeg.setFfmpegPath(ffmpegPath)
-        ffmpeg.setFfprobePath(ffprobePath)
     }
 
     extractFilesFromArgv(target?:string[]){
@@ -47,6 +46,26 @@ export default class Util{
 
         return result;
 
+    }
+
+    async getTag(fullPath:string){
+
+        if(this.tags.has(fullPath)) return this.tags.get(fullPath);
+
+        const tag = await win32props.getValue(fullPath, "Comment");
+        this.setTag(fullPath, tag)
+        return tag;
+    }
+
+    private setTag(fullPath:string, tag:string){
+        this.tags.set(fullPath, tag)
+    }
+
+    async writeTag(file:Mp.MediaFile, tag:string){
+        await win32props.setValue(file.fullPath, "Comment", tag)
+        const modifiedDate = new Date(file.date);
+        fs.utimesSync(file.fullPath, modifiedDate, modifiedDate);
+        this.setTag(file.fullPath, tag)
     }
 
     toFile(fullPath:string):Mp.MediaFile{
@@ -140,20 +159,10 @@ export default class Util{
 
     }
 
-    getMediaMetadata(fullPath:string):Promise<Mp.FfprobeData>{
-
-        return new Promise((resolve,reject)=>{
-            ffmpeg.ffprobe(fullPath, async (error:any, FfprobeData:ffmpeg.FfprobeData) => {
-
-                if(error){
-                    reject(new Error("Read media metadata failed"))
-                }
-
-                const metadata = FfprobeData as Mp.FfprobeData
-                metadata.volume = await this.getVolume(fullPath)
-                resolve(metadata);
-            })
-        })
+    async getMediaMetadata(fullPath:string, format = false):Promise<win32props.Property>{
+        const metadata = await win32props.read(fullPath, format)
+        metadata.volume = await this.getVolume(fullPath)
+        return metadata
     }
 
     async getMaxVolume(sourcePath:string):Promise<string>{
@@ -208,10 +217,9 @@ export default class Util{
 
         const metadata = await this.getMediaMetadata(sourcePath);
 
-        const bit_rate = metadata.streams[1].bit_rate;
-        if(!bit_rate) throw new Error("No audio bitrate detected")
+        if(!metadata.AudioEncodingBitrate) throw new Error("No audio bitrate detected")
 
-        const audioBitrate = options.audioBitrate !== "BitrateNone" ? options.audioBitrate : Math.ceil(parseInt(bit_rate)/1000)
+        const audioBitrate = options.audioBitrate !== "BitrateNone" ? options.audioBitrate : Math.ceil(parseInt(metadata.AudioEncodingBitrate)/1000)
         let audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : ""
 
         if(options.maxAudioVolume){
@@ -258,10 +266,9 @@ export default class Util{
         const size = Resolutions[options.frameSize] ? Resolutions[options.frameSize] : await this.getSize(metadata)
         const rotation = Rotations[options.rotation] ? `transpose=${Rotations[options.rotation]}` : "";
 
-        const bit_rate = metadata.streams[1].bit_rate;
-        if(!bit_rate) throw new Error("No audio bitrate detected")
+        if(!metadata.AudioEncodingBitrate) throw new Error("No audio bitrate detected")
 
-        const audioBitrate = options.audioBitrate !== "BitrateNone" ? options.audioBitrate : Math.ceil(parseInt(bit_rate)/1000)
+        const audioBitrate = options.audioBitrate !== "BitrateNone" ? options.audioBitrate : Math.ceil(parseInt(metadata.AudioEncodingBitrate)/1000)
         let audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : ""
 
         if(options.maxAudioVolume){
@@ -298,15 +305,15 @@ export default class Util{
         })
     }
 
-    private async getSize(metadata:ffmpeg.FfprobeData){
+    private async getSize(metadata:win32props.Property){
 
-        const rotation = metadata.streams[0].rotation
+        const rotation = metadata.VideoOrientation
 
         if(rotation === "-90" || rotation === "90"){
-            return `${metadata.streams[0].height}x${metadata.streams[0].width}`
+            return `${metadata.VideoFrameHeight}x${metadata.VideoFrameWidth}`
         }
 
-        return `${metadata.streams[0].width}x${metadata.streams[0].height}`
+        return `${metadata.VideoFrameWidth}x${metadata.VideoFrameHeight}`
     }
 
     private finishConvert(){
@@ -324,3 +331,7 @@ export default class Util{
 
     }
 }
+
+const util = new Util();
+
+export default util

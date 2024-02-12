@@ -15,11 +15,12 @@ type AppState = {
 }
 
 type AppAction =
+| { type: "init"}
 | { type: "loaded", value: boolean}
-| { type: "currentFile", value: Mp.MediaFile | null}
+| { type: "currentFile", value: Mp.MediaFile}
 | { type: "isMaximized", value: boolean}
 | { type: "isFullScreen", value: boolean}
-| { type: "playing", value: boolean}
+| { type: "playStatus", value: Mp.PlayStatus}
 | { type: "converting"}
 | { type: "tooltipVisible", value: boolean}
 | { type: "currentTime", value: number}
@@ -54,22 +55,31 @@ export const initialAppState : AppState = {
         gainNode:null,
         playbackSpeed:0,
         seekSpeed:0
-    }
+    },
 }
 
 const updater = (state: AppState, action: AppAction): AppState => {
 
     switch (action.type) {
 
+        case "init":
+            return {...state,
+                playing:false,
+                loaded:false,
+                currentFile:EmptyFile,
+                media:{...state.media,
+                    currentTime:0,
+                    videoDuration:0,
+                },
+            };
+
         case "loaded":
             return {...state, loaded:action.value}
 
         case "currentFile": {
-            if(!action.value){
-                return {...state, currentFile:EmptyFile, loaded:false};
-            }
 
             if(action.value.src){
+                action.value.src = action.value.src + `?${new Date().getTime()}`
                 return {...state, currentFile:action.value, loaded:true};
             }
 
@@ -82,8 +92,10 @@ const updater = (state: AppState, action: AppAction): AppState => {
         case "isFullScreen":
             return {...state, isFullScreen:action.value};
 
-        case "playing":
-            return {...state, playing:action.value};
+        case "playStatus":{
+            const playing = action.value == "playing"
+            return {...state, playing};
+        }
 
         case "converting":
             return {...state, converting:!state.converting};

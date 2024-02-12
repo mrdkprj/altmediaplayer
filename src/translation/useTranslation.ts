@@ -1,23 +1,16 @@
-import { writable, get } from "svelte/store"
+import { writable, derived } from "svelte/store"
 import { en } from "./en";
 import { ja } from "./ja";
 
-export const useTranslation = (lang:Mp.Lang) => {
+export const lang = writable<Mp.Lang>("en");
 
-    const store = writable(lang);
+const translate = (lang:Mp.Lang, key:keyof Mp.Labels) => {
 
-    const t = (key:keyof Mp.label) => {
-
-        if(get(store) == "en"){
-            return en[key]
-        }else{
-            return ja[key]
-        }
+    if(lang == "ja"){
+        return ja[key]
+    }else{
+        return en[key]
     }
-
-    $: {
-        store.set(lang)
-    }
-
-    return t;
 }
+
+export const t = derived(lang, ($lang) => (key:keyof Mp.Labels) => translate($lang, key));

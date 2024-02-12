@@ -1,18 +1,16 @@
-import ffmpeg from "fluent-ffmpeg"
-
 declare global {
 
     interface Window {
         api: Api;
     }
 
-    type RendererName = "Player" | "Playlist" | "Convert"
+    type RendererName = "Player" | "Playlist" | "Convert" | "Tag"
     type Renderer = {[key in RendererName] : Electron.BrowserWindow | null}
 
     type MainChannelEventMap = {
         "minimize": Mp.Event;
         "toggle-maximize": Mp.Event;
-        "close": Mp.CloseRequest;
+        "close": Mp.Event;
         "shortcut": Mp.ShortcutEvent;
         "drop": Mp.DropRequest;
         "load-file": Mp.LoadFileRequest;
@@ -33,9 +31,12 @@ declare global {
         "open-convert-sourcefile-dialog": Mp.OpenFileDialogRequest;
         "request-cancel-convert": Mp.Event;
         "rename-file": Mp.RenameRequest;
-        "rename-ready": Mp.RenameRequest;
+        "file-released":Mp.ReleaseFileResult;
         "playlist-item-selection-change": Mp.PlaylistItemSelectionChange;
         "open-sort-context": Mp.Position;
+        "media-state-change":Mp.MediaState;
+        "close-tag": Mp.Event;
+        "save-tags": Mp.SaveTagsEvent;
         "error": Mp.ErrorEvent;
     }
 
@@ -44,13 +45,12 @@ declare global {
         "load-file": Mp.FileLoadEvent;
         "toggle-play": Mp.Event;
         "toggle-fullscreen": Mp.Event;
-        "change-display-mode": Mp.ConfigChangeEvent;
+        "change-display-mode": Mp.SettingsChangeEvent;
         "capture-media": Mp.Event;
         "restart": Mp.Event;
-        "before-trash": Mp.TrashRequest;
-        "before-rename": Mp.RenameRequest;
+        "release-file": Mp.ReleaseFileRequest;
         "log": Mp.Logging;
-        "after-toggle-maximize": Mp.ConfigChangeEvent;
+        "after-toggle-maximize": Mp.SettingsChangeEvent;
         "toggle-convert": Mp.Event;
         "change-playback-speed": Mp.ChangePlaybackSpeedRequest;
         "change-seek-speed": Mp.ChangeSeekSpeedRequest;
@@ -64,6 +64,7 @@ declare global {
         "open-convert": Mp.OpenConvertDialogEvent;
         "after-convert": Mp.Event;
         "picture-in-picture":Mp.Event;
+        "open-tag-editor":Mp.OpenTagEditorEvent;
     }
 
     interface Api {
@@ -78,14 +79,42 @@ declare global {
         type Theme = "dark" | "light";
         type ConvertFormat = "MP4" | "MP3"
         type ThumbButtonType = "Play" | "Pause" | "Previous" | "Next"
-        type PlayerContextMenuType = "PlaybackSpeed" | "SeekSpeed" | "TogglePlaylistWindow" | "FitToWindow" | "ToggleFullscreen" | "Theme" | "Capture" | "PictureInPicture"
-        type PlaylistContextMenuType = "Remove" | "RemoveAll" | "Trash" | "CopyFileName" | "CopyFullpath" | "Reveal" | "Metadata" | "Convert" | "Sort" | "Rename" | "LoadList" | "SaveList" | "GroupBy"
         type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2;
         type SeekSpeed = 0.03 | 0.05 | 0.1 | 0.5 | 1 | 3 | 5 | 10 | 20;
         type SortOrder = "NameAsc" | "NameDesc" | "DateAsc" | "DateDesc"
         type FileDialogType = "Read" | "Write";
 
-        type ContextMenuSubType = PlaybackSpeed | SeekSpeed | SortOrder | Theme | FileDialogType
+        type PlayerContextMenuSubTypeMap = {
+            "PlaybackSpeed": Mp.PlaybackSpeed;
+            "SeekSpeed": Mp.SeekSpeed;
+            "TogglePlaylistWindow": null;
+            "FitToWindow": null;
+            "ToggleFullscreen": null;
+            "Theme": Mp.Theme;
+            "Capture": null;
+            "PictureInPicture": null;
+        }
+
+        type PlaylistContextMenuSubTypeMap = {
+            "Remove": null;
+            "RemoveAll": null;
+            "Trash": null;
+            "CopyFileName": null;
+            "CopyFullpath": null;
+            "Reveal": null;
+            "Metadata": null;
+            "Convert": null;
+            "Tag": string;
+            "ManageTags":null;
+            "Sort": Mp.SortOrder;
+            "Rename": null;
+            "LoadList": FileDialogType;
+            "SaveList": FileDialogType;
+            "GroupBy": null;
+        };
+
+        type PlayerContextMenuCallback<K extends keyof PlayerContextMenuSubTypeMap> = (menu:K, args?:Mp.PlayerContextMenuSubTypeMap[K]) => void
+        type PlaylistContextMenuCallback<K extends keyof PlaylistContextMenuSubTypeMap> = (menu:K, args?:Mp.PlaylistContextMenuSubTypeMap[K]) => void
 
         type VideoFrameSize = "SizeNone" | "360p" | "480p" | "720p" | "1080p";
         type VideoRotation = "RotationNone" | "90Clockwise" | "90CounterClockwise"
@@ -100,7 +129,7 @@ declare global {
 
         type ShortcutEvent = {
             renderer:RendererName;
-            menu: PlayerContextMenuType | PlaylistContextMenuType
+            menu: keyof PlayerContextMenuSubTypeMap | keyof PlaylistContextMenuSubTypeMap
         }
 
         type Bounds = {
@@ -120,7 +149,7 @@ declare global {
             groupBy:boolean;
         }
 
-        type Config = {
+        type Settings = {
             bounds: Bounds;
             playlistBounds:Bounds;
             theme: Mp.Theme;
@@ -137,12 +166,11 @@ declare global {
                 ampLevel:number;
                 mute:boolean;
             };
-            path:{
-                captureDestDir:string;
-                convertDestDir:string;
-                playlistDestDir:string;
-            },
-            lang:Mp.Lang;
+            defaultPath:string;
+            locale:{
+                mode:"system" | Mp.Lang;
+                lang:Mp.Lang;
+            }
             tags:string[];
         }
 
@@ -166,10 +194,6 @@ declare global {
             gainNode: GainNode | null;
             playbackSpeed:number;
             seekSpeed:number;
-        }
-
-        interface FfprobeData extends ffmpeg.FfprobeData {
-            volume?:MediaVolume
         }
 
         type MediaVolume = {
@@ -205,7 +229,7 @@ declare global {
         }
 
         type ReadyEvent = {
-            config:Config;
+            settings:Settings;
         }
 
         type FullscreenChange = {
@@ -225,18 +249,14 @@ declare global {
             renderer:RendererName;
         }
 
-        type PlaylistChangeEventType = "Move" | "Append";
-
         type PlaylistChangeEvent = {
             files:MediaFile[];
-            type:PlaylistChangeEventType;
         }
 
         type ChangePlaylistOrderRequet = {
             start:number;
             end:number;
             currentIndex:number;
-            type:PlaylistChangeEventType
         }
 
         type ProgressEvent = {
@@ -254,7 +274,7 @@ declare global {
 
         type FileLoadEvent = {
             currentFile:MediaFile;
-            autoPlay:boolean;
+            status:Mp.PlayStatus;
             startFrom?:number;
         }
 
@@ -287,8 +307,12 @@ declare global {
             files:Mp.MediaFile[]
         }
 
-        type TrashRequest = {
+        type ReleaseFileRequest = {
             fileIds:string[];
+        }
+
+        type ReleaseFileResult = {
+            currentTime:number;
         }
 
         type CopyRequest = {
@@ -298,12 +322,19 @@ declare global {
         type RenameRequest = {
             id:string;
             name:string;
-            currentTime?:number;
         }
 
         type RenameResult = {
             file:MediaFile;
             error?:boolean;
+        }
+
+        type OpenTagEditorEvent = {
+            tags:string[];
+        }
+
+        type SaveTagsEvent = {
+            tags:string[];
         }
 
         type OpenConvertDialogEvent = {
@@ -320,8 +351,8 @@ declare global {
             file:MediaFile;
         }
 
-        type ConfigChangeEvent = {
-            config:Config;
+        type SettingsChangeEvent = {
+            settings:Settings;
         }
 
         type OpenFileDialogRequest = {
@@ -344,7 +375,13 @@ declare global {
             value:T;
         }
 
-        type label = {
+        type MessageLabel = {
+            selectConvertInputFile:string;
+            selectPlaylistFile:string;
+        }
+
+        type Label = {
+            restart:string;
             shuffle:string;
             sort:string;
             playbackSpeed:string;
@@ -391,7 +428,13 @@ declare global {
             cancel:string;
             close:string;
             mute:string;
+            tags:string;
+            manageTag:string;
+            mediaFile:string;
+            playlistFile:string;
         }
+
+        type Labels = Label & MessageLabel
 
     }
 

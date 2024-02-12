@@ -1,4 +1,5 @@
-export const en:Mp.label = {
+export const en:Mp.Labels = {
+    restart:"Restart",
     shuffle: "Shuffule",
     sort:"Sort",
     playbackSpeed: "Playback Speed",
@@ -45,4 +46,10 @@ export const en:Mp.label = {
     cancel:"Cancel",
     close:"Close",
     mute:"Mute",
+    tags:"Add Tag To Comment",
+    manageTag:"Manage Tags",
+    mediaFile:"Media File",
+    playlistFile:"Playlist",
+    selectConvertInputFile:"Select a file to convert",
+    selectPlaylistFile:"Select a playlist file",
 }
