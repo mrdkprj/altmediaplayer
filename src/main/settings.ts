@@ -32,8 +32,6 @@ const defaultSettings :Mp.Settings = {
     tags:[],
 }
 
-export let settings:Settings | undefined;
-
 export default class Settings{
 
     tempPath:string;

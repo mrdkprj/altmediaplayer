@@ -271,8 +271,6 @@ const initPlaylist = (fullPaths:string[]) => {
 
     if(!playlistFiles.length) return;
 
-    //delayApplyTags(fullPaths, false)
-
     currentIndex = 0;
 
     sortPlayList();
@@ -291,8 +289,6 @@ const addToPlaylist = (fullPaths:string[]) => {
 
     playlistFiles.push(...newFiles)
 
-    //delayApplyTags(newFiles.map(file => file.fullPath), true)
-
     sortPlayList();
 
     shuffleList();
@@ -303,18 +299,6 @@ const addToPlaylist = (fullPaths:string[]) => {
     }
 
 }
-
-// Dont use await
-// const delayApplyTags = async (fullPaths:string[], append:boolean) => {
-
-//     const tags = await util.retrieveTags(fullPaths, append)
-
-//     playlistFiles.filter(file => file.fullPath in tags).forEach(file => {
-//         const tag = tags[file.fullPath]
-//         file.tag = tag;
-//     })
-
-// }
 
 const getCurrentFile = () => {
 
