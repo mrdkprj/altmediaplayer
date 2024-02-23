@@ -517,6 +517,10 @@ export default class Helper{
         return Menu.buildFromTemplate(template);
     }
 
+    getImage(){
+        return nativeImage.createFromDataURL(play).toDataURL()
+    }
+
     createThumButtons(onclick: (button:Mp.ThumbButtonType) => void){
 
         const playThumbButton:Electron.ThumbarButton = {

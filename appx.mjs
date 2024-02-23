@@ -5,17 +5,19 @@ build({
         appId: "com.altmediaplayer.app",
         productName: "AltMediaPlayer",
         files:[
-            "out/**/*"
+            "out/**/*",
+            "!**/node_modules/**/target${/*}"
         ],
         extraResources:[
             "./resources/ffmpeg.exe",
         ],
+        includeSubNodeModules:false,
         win:{
             target: {
-                target: "nsis",
+                target: "appx",
                 arch: [
                     "x64"
-                ]
+                ],
             },
             icon: "/src/assets/icon.ico",
             fileAssociations: [
@@ -28,7 +30,8 @@ build({
                     "icon": "src/assets/icon_audio.ico",
                 },
 
-            ]
+            ],
+            certificateFile:process.env.CERT,
         },
         linux:{
             target: "deb",
@@ -37,11 +40,19 @@ build({
             fileAssociations: [
                 {
                     "ext": "mp4",
-                  },
-                  {
+                },
+                {
                     "ext": "mp3",
-                  }
+                }
             ]
+        },
+        appx:{
+            applicationId: "AltMediaPlayer",
+            identityName:"7610granarbo.AltMediaPlayer",
+            displayName: "AltMediaPlayer",
+            publisherDisplayName: "granarbo",
+            languages: ["en-us"],
+            backgroundColor:"transparent"
         },
         nsis: {
             oneClick: true,

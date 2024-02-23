@@ -1,3 +1,5 @@
+import type { Property } from "win32props"
+
 declare global {
 
     interface Window {
@@ -218,6 +220,10 @@ declare global {
             fileId:string;
             oldName:string;
             newName:string;
+        }
+
+        type Metadata = Property & {
+            Volume:any;
         }
 
         type ConvertOptions = {

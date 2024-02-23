@@ -3,10 +3,14 @@ import { svelte } from "@sveltejs/vite-plugin-svelte"
 
 export default defineConfig({
     main: {
+        build:{
+            minify:true,
+        },
         plugins: [externalizeDepsPlugin()]
     },
     preload: {
         build:{
+            minify:true,
             lib:{
                 entry:"src/main/preload.ts"
             }
@@ -15,6 +19,7 @@ export default defineConfig({
     },
     renderer: {
         build:{
+            minify:true,
             rollupOptions:{
                 input:{
                     player_window:"src/renderer/player/index.html",

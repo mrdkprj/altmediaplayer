@@ -159,9 +159,9 @@ class Util{
 
     }
 
-    async getMediaMetadata(fullPath:string, format = false):Promise<win32props.Property>{
-        const metadata = await win32props.read(fullPath, format)
-        metadata.volume = await this.getVolume(fullPath)
+    async getMediaMetadata(fullPath:string, format = false):Promise<Mp.Metadata>{
+        const metadata = await win32props.read(fullPath, format) as Mp.Metadata
+        metadata.Volume = await this.getVolume(fullPath)
         return metadata
     }
 

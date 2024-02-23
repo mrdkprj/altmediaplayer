@@ -33,5 +33,9 @@ dist/
 
 # package
 package/
+package_resources
+dist_old/
+
+.env
 
 electron.vite.config*.mjs

@@ -1,6 +1,6 @@
 {
   "name": "altmediaplayer",
-  "productName": "altmediaplayer",
+  "productName": "AltMediaPlayer",
   "version": "1.1.1",
   "description": "MediaPlayer",
   "main": "out/main/index.js",
@@ -9,6 +9,7 @@
     "type": "tsc",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "build": "electron-vite build && node build.mjs",
+    "appx": "node --env-file=.env appx.mjs",
     "start": "electron-vite dev --watch",
     "preview": "electron-vite preview",
     "prebuild": "electron-vite build"
@@ -21,7 +22,7 @@
   "license": "MIT",
   "dependencies": {
     "fluent-ffmpeg": "^2.1.2",
-    "win32props": "mrdkprj/metadata#0.3.0"
+    "win32props": "^0.3.2"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.0.1",

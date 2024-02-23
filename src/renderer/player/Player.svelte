@@ -416,14 +416,28 @@
         }
 
         if(e.key === "ArrowUp"){
+
             showControl();
-            updateVolume($appState.media.videoVolume + 0.01)
+
+            if(e.shiftKey){
+                updateAmpLevel($appState.media.ampLevel + 0.01)
+            }else{
+                updateVolume($appState.media.videoVolume + 0.01)
+            }
+
             return
         }
 
         if(e.key === "ArrowDown"){
+
             showControl();
-            updateVolume($appState.media.videoVolume - 0.01)
+
+            if(e.shiftKey){
+                updateAmpLevel($appState.media.ampLevel - 0.01)
+            }else{
+                updateVolume($appState.media.videoVolume - 0.01)
+            }
+
             return
         }
 
