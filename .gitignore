@@ -20,7 +20,7 @@ jspm_packages/
 # vite
 out/
 
-#ffmpeg
+# resources
 /resources/ffmpeg.exe
 /resources/ffprobe.exe
 
@@ -36,6 +36,7 @@ package/
 package_resources
 dist_old/
 
+# env
 .env
 
 electron.vite.config*.mjs

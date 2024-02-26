@@ -129,6 +129,20 @@
 
     }
 
+    const onLoadError = () => {
+
+        dispatch({type:"loaded", value:false})
+        dispatch({type:"playStatus", value:"stopped"})
+
+        document.title = `${APP_NAME} - ${$appState.currentFile.name}`
+
+        dispatch({type:"videoDuration", value:0})
+
+        video.autoplay = false;
+
+        window.api.send("error", {message:$t("unsupportedMedia")})
+    }
+
     const onEmptied = () => {
 
         if(!afterReleaseCallback) return
@@ -214,12 +228,12 @@
         window.api.send("load-file", {index, isAbsolute:false})
     }
 
-    const togglePlay = () => {
+    const togglePlay = async () => {
 
         if(!$appState.loaded) return;
 
         if(video.paused){
-            video.play();
+            await video.play();
         }else{
             video.pause();
         }
@@ -536,6 +550,7 @@
             on:pause={onPaused}
             on:contextmenu={onContextMenu}
             on:emptied={onEmptied}
+            on:error={onLoadError}
             muted={$appState.media.mute}
         />
     </div>

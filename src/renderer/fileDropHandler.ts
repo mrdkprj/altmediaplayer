@@ -1,4 +1,4 @@
-import { AudioExtentions, VideoExtentions } from "../constants";
+import { AudioExtensions, VideoExtensions } from "../constants";
 
 const ext = (name:string | undefined) => {
 
@@ -24,6 +24,6 @@ export const getDropFiles = (e:DragEvent) => {
                     const path = file?.path ?? ""
                     return {path, extension}
                 })
-                .filter(item => AudioExtentions.includes(item.extension) || VideoExtentions.includes(item.extension))
+                .filter(item => VideoExtensions.concat(AudioExtensions).includes(item.extension))
                 .map(item => item.path)
 }

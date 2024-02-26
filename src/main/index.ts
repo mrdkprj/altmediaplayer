@@ -7,7 +7,7 @@ import util from "./util";
 import Settings from "./settings";
 import Dialogs from "./dialogs";
 import Deferred from "./deferred";
-import { EmptyFile, FORWARD, BACKWARD, AudioExtentions } from "../constants";
+import { EmptyFile, FORWARD, BACKWARD, PlayableAudioExtentions } from "../constants";
 
 const locked = app.requestSingleInstanceLock(process.argv);
 
@@ -39,7 +39,7 @@ const secondInstanceState:Mp.SecondInstanceState = {
     requireInitPlaylist:false,
 }
 
-let playStatus:Mp.PlayStatus;
+let playStatus:Mp.PlayStatus = "stopped";
 let doShuffle = false;
 let currentIndex = -1;
 let randomIndices:number[] = [];
@@ -120,7 +120,7 @@ const playlistContextMenuCallback = (menu:keyof Mp.PlaylistContextMenuSubTypeMap
             displayMetadata();
             break;
         case "Convert":
-            openConvert();
+            openConvert("user");
             break;
         case "Sort":
             changeSortOrder(args as Mp.SortOrder);
@@ -259,6 +259,7 @@ const onPlayerReady = () => {
 
 const loadMediaFile = (startFrom?:number) => {
     const currentFile = getCurrentFile();
+
     respond("Playlist", "load-file", {currentFile, status:playStatus, startFrom})
     respond("Player", "load-file", {currentFile, status:playStatus, startFrom})
 }
@@ -602,9 +603,9 @@ const togglePlaylistWindow = () => {
 
 }
 
-const openConvert = () => {
+const openConvert = (opener:Mp.DialogOpener) => {
     const file = playlistFiles.find(file => file.id == playlistSelection.selectedId) ?? EmptyFile
-    respond("Convert", "open-convert", {file})
+    respond("Convert", "open-convert", {file, opener})
     Renderers.Convert?.show();
 }
 
@@ -612,11 +613,14 @@ const openConvertSourceFileDialog = (e:Mp.OpenFileDialogRequest) => {
 
     if(!Renderers.Convert) return;
 
-    const files = dialogs.openConvertSourceFileDialog(Renderers.Convert, e.fullPath)
+    const selectedFiles = dialogs.openConvertSourceFileDialog(Renderers.Convert, e.fullPath)
 
-    if(files){
-        respond("Convert", "after-sourcefile-select", {file:util.toFile(files[0])})
-    }
+    if(!selectedFiles) return;
+
+    const file = selectedFiles ? util.toFile(selectedFiles[0]) : EmptyFile
+
+    respond("Convert", "after-sourcefile-select", {file})
+
 }
 
 const changeSizeMode = () => {
@@ -657,7 +661,7 @@ const saveCapture = async (data:Mp.CaptureEvent) => {
 
     const file = getCurrentFile();
 
-    if(!file.id || AudioExtentions.includes(file.extension)) return;
+    if(!file.id || PlayableAudioExtentions.includes(file.extension)) return;
 
     if(!Renderers.Player) return;
 
@@ -718,7 +722,7 @@ const startConvert = async (data:Mp.ConvertRequest) => {
 
     }finally{
 
-        openConvert();
+        openConvert("system");
         respond("Player", "toggle-convert", {})
 
     }
@@ -956,4 +960,6 @@ const registerIpcChannels = () => {
     addEventHandler("shortcut", onShortcut)
     addEventHandler("save-tags", saveTags)
     addEventHandler("close-tag", closeTagEditor)
+    addEventHandler("error", (e:Mp.ErrorEvent) => dialogs.showErrorMessage(e.message))
+
 }

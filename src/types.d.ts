@@ -124,6 +124,8 @@ declare global {
 
         type PlayStatus = "playing" | "paused" | "stopped"
 
+        type DialogOpener = "system"|"user"
+
         type SecondInstanceState = {
             timeout:NodeJS.Timeout | null;
             requireInitPlaylist:boolean;
@@ -223,7 +225,7 @@ declare global {
         }
 
         type Metadata = Property & {
-            Volume:any;
+            Volume:MediaVolume;
         }
 
         type ConvertOptions = {
@@ -345,6 +347,7 @@ declare global {
 
         type OpenConvertDialogEvent = {
             file:MediaFile;
+            opener:DialogOpener;
         }
 
         type ConvertRequest = {
@@ -384,6 +387,7 @@ declare global {
         type MessageLabel = {
             selectConvertInputFile:string;
             selectPlaylistFile:string;
+            unsupportedMedia:string;
         }
 
         type Label = {

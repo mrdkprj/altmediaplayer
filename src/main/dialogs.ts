@@ -1,6 +1,5 @@
 import path from "path"
 import { BrowserWindow, dialog } from "electron"
-import { AudioFormats, VideoFormats } from "../constants";
 import { translation } from "../translation/translation";
 
 export default class Dialogs{
@@ -13,8 +12,12 @@ export default class Dialogs{
         this.t = translation(this.settings.locale.lang)
     }
 
-    async showErrorMessage(ex:any){
-        await dialog.showMessageBox({type:"error", message:ex.message})
+    async showErrorMessage(ex:any | string){
+        if(typeof ex == "string"){
+            await dialog.showMessageBox({type:"error", message:ex})
+        }else{
+            await dialog.showMessageBox({type:"error", message:ex.message})
+        }
     }
 
     openConvertSourceFileDialog(window:BrowserWindow, fullPath:string){
@@ -23,7 +26,7 @@ export default class Dialogs{
             title: this.t("selectConvertInputFile"),
             defaultPath: fullPath,
             filters: [
-                { name: this.t("mediaFile"), extensions: VideoFormats.concat(AudioFormats) },
+                { name: this.t("mediaFile"), extensions: ["*"] },
             ],
             properties: ["openFile", "multiSelections"]
         })

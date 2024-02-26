@@ -2,21 +2,21 @@
 
     import { onMount } from "svelte";
     import RadioGroup from "./RadioGroup.svelte";
-    import { AudioExtentions } from "../../constants";
+    import { AudioExtensions, VideoExtensions } from "../../constants";
     import { reducer, initialAppState } from "./appStateReducer";
     import { t, lang } from "../../translation/useTranslation"
 
     const { appState, dispatch } = reducer(initialAppState);
 
     const beforeOpen = (e:Mp.OpenConvertDialogEvent) => {
-        if(!$appState.converting){
+        if(!$appState.converting && e.opener == "user"){
             changeSourceFile(e.file)
         }
     }
 
     const changeSourceFile = (file:Mp.MediaFile) => {
         dispatch({type:"sourceFile", value:file.fullPath})
-        const format = AudioExtentions.includes(file.extension) ? "MP3" : "MP4"
+        const format = AudioExtensions.includes(file.extension) ? "MP3" : "MP4"
         dispatch({type:"format", value:format})
     }
 
@@ -35,6 +35,8 @@
     }
 
     const requestConvert = () => {
+
+        if(!$appState.sourceFile) return;
 
         lock();
 
@@ -60,7 +62,11 @@
     const onAfterConvert = () => unlock()
 
     const onSourceFileSelect = (data:Mp.FileSelectResult) => {
-        changeSourceFile(data.file);
+        if(VideoExtensions.concat(AudioExtensions).includes(data.file.extension)){
+            changeSourceFile(data.file);
+        }else{
+            window.api.send("error", {message:$t("unsupportedMedia")})
+        }
     }
 
     const onChangeFormat = (e:Mp.RadioGroupChangeEvent<Mp.ConvertFormat>) => {

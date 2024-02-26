@@ -165,13 +165,8 @@ class Util{
         return metadata
     }
 
-    async getMaxVolume(sourcePath:string):Promise<string>{
-        const volume =await this.getVolume(sourcePath)
-        return volume.max_volume;
-    }
-
     async getVolume(sourcePath:string):Promise<Mp.MediaVolume>{
-        return new Promise((resolve,reject)=>{
+        return new Promise((resolve,_reject)=>{
 
             this.command = ffmpeg({source:sourcePath})
 
@@ -180,8 +175,10 @@ class Util{
                 "-af",
                 "volumedetect",
                 "-f null",
-            ]).on("error", async (err:any) => {
-                reject(new Error(err.message))
+                " /dev/null"
+            ]).on("error", async () => {
+                this.cleanUp()
+                resolve({n_samples:"N/A", max_volume:"N/A", mean_volume:"N/A"})
             })
             .on("end", (_stdout, stderr) => {
                 this.finishConvert();
@@ -217,13 +214,15 @@ class Util{
 
         const metadata = await this.getMediaMetadata(sourcePath);
 
-        if(!metadata.AudioEncodingBitrate) throw new Error("No audio bitrate detected")
+        if(!metadata.AudioEncodingBitrate){
+            metadata.AudioEncodingBitrate = "0"
+        }
 
-        const audioBitrate = options.audioBitrate !== "BitrateNone" ? options.audioBitrate : Math.ceil(parseInt(metadata.AudioEncodingBitrate)/1000)
+        const audioBitrate = options.audioBitrate !== "BitrateNone" ? parseInt(options.audioBitrate) : Math.ceil(parseInt(metadata.AudioEncodingBitrate)/1000)
         let audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : ""
 
         if(options.maxAudioVolume){
-            const maxVolumeText = await this.getMaxVolume(sourcePath);
+            const maxVolumeText = metadata.Volume.max_volume;
             const maxVolume = parseFloat(maxVolumeText);
             if(maxVolume >= 0){
                 throw new Error("No max_volume")
@@ -235,7 +234,11 @@ class Util{
 
             this.command = ffmpeg({source:sourcePath})
 
-            this.command.format("mp3").audioCodec("libmp3lame").audioBitrate(audioBitrate)
+            this.command.format("mp3").audioCodec("libmp3lame");
+
+            if(audioBitrate > 0){
+                this.command.audioBitrate(audioBitrate)
+            }
 
             if(audioVolume){
                 this.command.audioFilters(audioVolume)
@@ -266,13 +269,15 @@ class Util{
         const size = Resolutions[options.frameSize] ? Resolutions[options.frameSize] : await this.getSize(metadata)
         const rotation = Rotations[options.rotation] ? `transpose=${Rotations[options.rotation]}` : "";
 
-        if(!metadata.AudioEncodingBitrate) throw new Error("No audio bitrate detected")
+        if(!metadata.AudioEncodingBitrate){
+            metadata.AudioEncodingBitrate = "0"
+        }
 
-        const audioBitrate = options.audioBitrate !== "BitrateNone" ? options.audioBitrate : Math.ceil(parseInt(metadata.AudioEncodingBitrate)/1000)
+        const audioBitrate = options.audioBitrate !== "BitrateNone" ? parseInt(options.audioBitrate) : Math.ceil(parseInt(metadata.AudioEncodingBitrate)/1000)
         let audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : ""
 
         if(options.maxAudioVolume){
-            const maxVolumeText = await this.getMaxVolume(sourcePath);
+            const maxVolumeText = metadata.Volume.max_volume;
             const maxVolume = parseFloat(maxVolumeText);
             if(maxVolume >= 0){
                 throw new Error("No max_volume")
@@ -288,10 +293,16 @@ class Util{
             if(rotation){
                 this.command.withVideoFilter(rotation)
             }
-            this.command.audioCodec("libmp3lame").audioBitrate(audioBitrate)
+            this.command.audioCodec("libmp3lame")
+
+            if(audioBitrate > 0){
+                this.command.audioBitrate(audioBitrate)
+            }
+
             if(audioVolume){
                 this.command.audioFilters(audioVolume)
             }
+
             this.command.on("error", async (err:any) => {
                     this.cleanUp();
                     reject(new Error(err.message))
@@ -317,6 +328,7 @@ class Util{
     }
 
     private finishConvert(){
+        this.cancelConvert();
         this.command = null;
         this.convertDestFile = null;
     }

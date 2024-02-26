@@ -129,7 +129,6 @@
 
 button{
     line-height: 2.5rem;
-    font-size: 2em;
     border: 1px solid var(--button-border-color);
     border-radius: 5px;
     background-color: var(--button-bgcolor);
@@ -143,13 +142,14 @@ button:not([disabled]):hover{
     color: var(--secondary-forecolor);
 }
 
-input[type=radio]:disabled + label{
-    color: var(--btn-disabled);
-    cursor: auto;
-}
-
 button:disabled{
     background-color: var(--button-disabled);
     opacity: 0.5;
     cursor: auto;
 }
+
+input[type=radio]:disabled + label{
+    color: var(--btn-disabled);
+    cursor: auto;
+}
+

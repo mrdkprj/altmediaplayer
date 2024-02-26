@@ -52,4 +52,5 @@ export const en:Mp.Labels = {
     playlistFile:"Playlist",
     selectConvertInputFile:"Select a file to convert",
     selectPlaylistFile:"Select a playlist file",
+    unsupportedMedia:"File broken or unsupported format",
 }

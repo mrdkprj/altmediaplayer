@@ -130,8 +130,24 @@
     }
 
     .btn{
-        line-height: 25px;
+        line-height: 2.5rem;
+        border: 1px solid var(--button-border-color);
+        border-radius: 5px;
+        background-color: var(--button-bgcolor);
+        color: var(--button-color);
+        cursor: pointer;
         padding: 0px 20px;
+    }
+
+    .btn:not([disabled]):hover{
+        background-color: var(--secondary-highlight-color);
+        color: var(--secondary-forecolor);
+    }
+
+    .btn:disabled{
+        background-color: var(--button-disabled);
+        opacity: 0.5;
+        cursor: auto;
     }
 
     .btn-sm{

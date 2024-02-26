@@ -52,4 +52,5 @@ export const ja:Mp.Labels = {
     playlistFile:"プレイリスト",
     selectConvertInputFile:"変換するファイルを選択",
     selectPlaylistFile:"プレイリストを選択",
+    unsupportedMedia:"File broken or unsupported format",
 }
