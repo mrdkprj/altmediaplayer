@@ -3,6 +3,7 @@
     import { onMount } from "svelte";
     import List from "./List.svelte";
 
+    import editor from "./editor";
     import { getDropFiles } from "../fileDropHandler";
     import { handleShortcut } from "../shortcut"
     import { handleKeyEvent, Buttons } from "../../constants";
@@ -12,15 +13,6 @@
     let fileListContainer:HTMLDivElement;
 
     const List_Item_Padding = 10;
-
-    const renameData:Mp.RenameData = {
-        fileId:"",
-        oldName:"",
-        newName:""
-    }
-
-    const undoStack:Mp.RenameData[] = []
-    const redoStack:Mp.RenameData[] = []
 
     const onContextMenu = (e:MouseEvent) => {
         e.preventDefault()
@@ -281,8 +273,8 @@
 
         const rect = selectedElement.getBoundingClientRect();
 
-        renameData.fileId = selectedElement.id;
-        renameData.oldName = fileName;
+        editor.begin(selectedElement.id, fileName)
+
         dispatch({
             type:"startRename",
             value:{
@@ -306,28 +298,28 @@
 
     const endEditFileName = () => {
 
-        if(renameData.oldName === $appState.rename.inputValue){
+        if(editor.data.name === $appState.rename.inputValue){
             endRename();
         }else{
-            renameData.newName = $appState.rename.inputValue;
-            undoStack.push({...renameData})
-            requestRename(renameData.fileId, renameData.newName);
+            editor.update($appState.rename.inputValue);
+            requestRename();
         }
 
     }
 
-    const requestRename = (id:string, name:string) => {
+    const requestRename = () => {
         dispatch({type:"preventBlur", value:true})
-        window.api.send("rename-file", {id, name})
+        window.api.send("rename-file", {data:editor.data})
     }
 
     const onRename = (data:Mp.RenameResult) => {
 
         if(data.error){
-            undoStack.pop();
-            select(data.file.id);
+            editor.rollback()
+            select(editor.data.id);
         }else{
-            dispatch({type:"rename", value:{name:data.file.name, id:data.file.id}})
+            editor.end()
+            dispatch({type:"rename", value:editor.data})
         }
 
         endRename();
@@ -336,29 +328,25 @@
 
     const undoRename = () => {
 
-        const stack = undoStack.pop();
+        if(!editor.canUndo()) return;
 
-        if(!stack) return;
+        editor.undo();
 
-        redoStack.push(stack);
+        select(editor.data.id)
 
-        select(stack.fileId)
-
-        requestRename(stack.fileId, stack.oldName)
+        requestRename()
 
     }
 
     const redoRename = () => {
 
-        const stack = redoStack.pop();
+        if(!editor.canRedo()) return;
 
-        if(!stack) return;
+        editor.redo();
 
-        undoStack.push(stack);
+        select(editor.data.id)
 
-        select(stack.fileId)
-
-        requestRename(stack.fileId, stack.newName)
+        requestRename()
 
     }
 

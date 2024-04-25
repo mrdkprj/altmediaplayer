@@ -219,9 +219,8 @@ declare global {
         }
 
         type RenameData = {
-            fileId:string;
-            oldName:string;
-            newName:string;
+            id:string;
+            name:string;
         }
 
         type Metadata = Property & {
@@ -328,8 +327,7 @@ declare global {
         }
 
         type RenameRequest = {
-            id:string;
-            name:string;
+            data:Mp.RenameData
         }
 
         type RenameResult = {

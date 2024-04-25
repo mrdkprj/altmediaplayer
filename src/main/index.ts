@@ -828,19 +828,19 @@ const fromPlaylistJson = (jsonData:string) => {
     }
 }
 
-const renameFile = async (data:Mp.RenameRequest) => {
+const renameFile = async (e:Mp.RenameRequest) => {
 
-    const currentTime = await releaseFile([data.id]);
+    const currentTime = await releaseFile([e.data.id]);
 
-    const fileIndex = playlistFiles.findIndex(file => file.id == data.id)
+    const fileIndex = playlistFiles.findIndex(file => file.id == e.data.id)
     const file = playlistFiles[fileIndex];
     const filePath = file.fullPath;
-    const newPath = path.join(path.dirname(filePath), data.name)
+    const newPath = path.join(path.dirname(filePath), e.data.name)
 
     try{
 
         if(util.exists(newPath)){
-            throw new Error(`File name "${data.name}" exists`)
+            throw new Error(`File name "${e.data.name}" exists`)
         }
 
         fs.renameSync(filePath, newPath)
