@@ -131,6 +131,8 @@
 
     const onLoadError = () => {
 
+        let loaded = $appState.loaded;
+
         dispatch({type:"loaded", value:false})
         dispatch({type:"playStatus", value:"stopped"})
 
@@ -140,7 +142,9 @@
 
         video.autoplay = false;
 
-        window.api.send("error", {message:$t("unsupportedMedia")})
+        if(loaded){
+            window.api.send("error", {message:$t("unsupportedMedia")})
+        }
     }
 
     const onEmptied = () => {
