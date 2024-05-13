@@ -174,9 +174,9 @@ class Util{
                 "-vn",
                 "-af",
                 "volumedetect",
-                "-f null",
-                " /dev/null"
-            ]).on("error", async () => {
+                "-f null"
+            ]).on("error", async (stderr) => {
+                console.log(stderr)
                 this.cleanUp()
                 resolve({n_samples:"N/A", max_volume:"N/A", mean_volume:"N/A"})
             })
