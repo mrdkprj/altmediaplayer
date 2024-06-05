@@ -348,11 +348,14 @@
 
     const showControl = () => {
 
-        if($appState.isFullScreen){
-            dispatch({type:"autohide", value:false})
-            if(hideControlTimeout){
-                window.clearTimeout(hideControlTimeout)
-            }
+        if(!$appState.isFullScreen) return;
+
+        dispatch({type:"autohide", value:false})
+        if(hideControlTimeout){
+            window.clearTimeout(hideControlTimeout)
+        }
+
+        if(!$appState.preventAutohide){
             hideControl();
         }
     }
