@@ -23,8 +23,7 @@ export const ja:Mp.Labels = {
     rename:"名前の変更",
     metadata:"メタデータを表示",
     convert:"コンバート",
-    loadList:"プレイリストを読み込む",
-    saveList:"プレイリストを保存する",
+    moveFile:"ファイルを移動",
     clearList:"プレイリストをクリア",
     groupBy:"フォルダ名でまとめる",
     nameAsc:"名前（昇順）",
@@ -49,8 +48,6 @@ export const ja:Mp.Labels = {
     tags:"コメントにタグを追加",
     manageTag:"タグを管理",
     mediaFile:"メディアファイル",
-    playlistFile:"プレイリスト",
     selectConvertInputFile:"変換するファイルを選択",
-    selectPlaylistFile:"プレイリストを選択",
     unsupportedMedia:"File broken or unsupported format",
 }

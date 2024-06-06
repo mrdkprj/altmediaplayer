@@ -128,11 +128,8 @@ const playlistContextMenuCallback = (menu:keyof Mp.PlaylistContextMenuSubTypeMap
         case "Rename":
             respond("Playlist", "start-rename", {})
             break;
-        case "LoadList":
-            loadPlaylistFile();
-            break;
-        case "SaveList":
-            savePlaylistFile();
+        case "Move":
+            moveFile(playlistSelection.selectedIds);
             break;
         case "GroupBy":
             toggleGroupBy();
@@ -532,6 +529,35 @@ const deleteFile = async (selectedIds:string[]) => {
     }
 }
 
+const moveFile = async (selectedIds:string[]) => {
+
+    if(!Renderers.Playlist) return;
+
+    if(selectedIds.length != 1) return;
+
+    await releaseFile(selectedIds);
+
+    try {
+        const files = playlistFiles.filter(file => file.id == selectedIds[0]);
+
+        if(!files.length) return;
+
+        const file = files[0];
+
+        const destPath = dialogs.showSaveDialog(Renderers.Playlist, file.fullPath);
+
+        if(!destPath || file.fullPath == destPath) return;
+
+        removeFromPlaylist(selectedIds);
+
+        fs.renameSync(file.fullPath, destPath);
+
+    }catch(ex:any){
+        dialogs.showErrorMessage(ex)
+    }
+
+}
+
 const reveal = () => {
 
     if(!playlistSelection.selectedId) return;
@@ -787,45 +813,6 @@ const toggleCommentMenu = async () => {
 
     await helper.toggleTagContextMenu(playlistMenu, playlistSelection.selectedIds.length == 1, file)
 
-}
-
-const loadPlaylistFile = () => {
-
-    if(!Renderers.Playlist) return;
-
-    const file = dialogs.openPlaylistDialog(Renderers.Playlist)
-
-    if(!file) return;
-
-    settings.data.defaultPath = path.dirname(file[0]);
-
-    const data = fs.readFileSync(file[0], "utf8")
-
-    addToPlaylist(fromPlaylistJson(data))
-
-}
-
-const savePlaylistFile = () => {
-
-    if(!Renderers.Playlist || !playlistFiles.length) return;
-
-    const selectedPath = dialogs.savePlaylistDialog(Renderers.Playlist)
-
-    if(!selectedPath) return
-
-    settings.data.defaultPath = selectedPath;
-
-    const data = playlistFiles.map(file => file.fullPath)
-    fs.writeFileSync(selectedPath, JSON.stringify(data), {encoding:"utf8"})
-
-}
-
-const fromPlaylistJson = (jsonData:string) => {
-    try{
-        return JSON.parse(jsonData)
-    }catch(ex:any){
-        dialogs.showErrorMessage(ex)
-    }
 }
 
 const renameFile = async (e:Mp.RenameRequest) => {

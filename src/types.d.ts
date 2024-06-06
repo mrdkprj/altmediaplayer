@@ -84,7 +84,6 @@ declare global {
         type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2;
         type SeekSpeed = 0.03 | 0.05 | 0.1 | 0.5 | 1 | 3 | 5 | 10 | 20;
         type SortOrder = "NameAsc" | "NameDesc" | "DateAsc" | "DateDesc"
-        type FileDialogType = "Read" | "Write";
 
         type PlayerContextMenuSubTypeMap = {
             "PlaybackSpeed": Mp.PlaybackSpeed;
@@ -110,13 +109,9 @@ declare global {
             "ManageTags":null;
             "Sort": Mp.SortOrder;
             "Rename": null;
-            "LoadList": FileDialogType;
-            "SaveList": FileDialogType;
+            "Move": null;
             "GroupBy": null;
         };
-
-        type PlayerContextMenuCallback<K extends keyof PlayerContextMenuSubTypeMap> = (menu:K, args?:Mp.PlayerContextMenuSubTypeMap[K]) => void
-        type PlaylistContextMenuCallback<K extends keyof PlaylistContextMenuSubTypeMap> = (menu:K, args?:Mp.PlaylistContextMenuSubTypeMap[K]) => void
 
         type VideoFrameSize = "SizeNone" | "360p" | "480p" | "720p" | "1080p";
         type VideoRotation = "RotationNone" | "90Clockwise" | "90CounterClockwise"
@@ -384,7 +379,6 @@ declare global {
 
         type MessageLabel = {
             selectConvertInputFile:string;
-            selectPlaylistFile:string;
             unsupportedMedia:string;
         }
 
@@ -413,8 +407,7 @@ declare global {
             rename:string;
             metadata:string;
             convert:string;
-            loadList:string;
-            saveList:string;
+            moveFile:string;
             clearList:string;
             groupBy:string;
             nameAsc:string;
@@ -439,7 +432,6 @@ declare global {
             tags:string;
             manageTag:string;
             mediaFile:string;
-            playlistFile:string;
         }
 
         type Labels = Label & MessageLabel

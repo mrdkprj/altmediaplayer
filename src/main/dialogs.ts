@@ -59,23 +59,9 @@ export default class Dialogs{
         return await dialog.showMessageBox(window, {type:"info", message:metadata,  buttons:["Copy", "OK"], noLink:true})
     }
 
-    openPlaylistDialog(window:BrowserWindow){
-        return dialog.showOpenDialogSync(window, {
-            title: this.t("selectPlaylistFile"),
-            defaultPath: this.settings.defaultPath,
-            filters: [
-                { name: this.t("playlistFile"), extensions: ["json"] },
-            ],
-            properties: ["openFile"]
-        })
-    }
-
-    savePlaylistDialog(window:BrowserWindow){
+    showSaveDialog(window:BrowserWindow, defaultPath?:string){
         return dialog.showSaveDialogSync(window, {
-            defaultPath: this.settings.defaultPath,
-            filters: [
-                { name: this.t("playlistFile"), extensions: ["json"] },
-            ],
+            defaultPath: defaultPath,
         })
     }
 }

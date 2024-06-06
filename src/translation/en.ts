@@ -23,8 +23,7 @@ export const en:Mp.Labels = {
     rename:"Rename",
     metadata:"View Metadata",
     convert:"Convert",
-    loadList:"Load Playlist",
-    saveList:"Save Playlist",
+    moveFile:"Move File",
     clearList:"Clear Playlist",
     groupBy:"Group By Directory",
     nameAsc:"Name(Asc)",
@@ -49,8 +48,6 @@ export const en:Mp.Labels = {
     tags:"Add Tag To Comment",
     manageTag:"Manage Tags",
     mediaFile:"Media File",
-    playlistFile:"Playlist",
     selectConvertInputFile:"Select a file to convert",
-    selectPlaylistFile:"Select a playlist file",
     unsupportedMedia:"File broken or unsupported format",
 }

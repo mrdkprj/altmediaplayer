@@ -384,12 +384,8 @@ export default class Helper{
             },
             { type: "separator" },
             {
-                label: this.t("loadList"),
-                click: () => onclick("LoadList")
-            },
-            {
-                label: this.t("saveList"),
-                click: () => onclick("SaveList")
+                label: this.t("moveFile"),
+                click: () => onclick("Move")
             },
             { type: "separator" },
             {
