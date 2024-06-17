@@ -90,6 +90,9 @@ const playerContextMenuCallback = (menu:keyof Mp.PlayerContextMenuSubTypeMap, ar
         case "Capture":
             respond("Player", "capture-media", {});
             break;
+        case "OpenConfigFile":
+            openConfigFileJson();
+            break;
     }
 }
 
@@ -535,8 +538,6 @@ const moveFile = async (selectedIds:string[]) => {
 
     if(selectedIds.length != 1) return;
 
-    await releaseFile(selectedIds);
-
     try {
         const files = playlistFiles.filter(file => file.id == selectedIds[0]);
 
@@ -544,9 +545,13 @@ const moveFile = async (selectedIds:string[]) => {
 
         const file = files[0];
 
-        const destPath = dialogs.showSaveDialog(Renderers.Playlist, file.fullPath);
+        const defaultPath = settings.data.defaultPath && fs.existsSync(settings.data.defaultPath) ? path.join(settings.data.defaultPath, file.name) : file.fullPath;
+        const destPath = dialogs.showSaveDialog(Renderers.Playlist, defaultPath);
 
         if(!destPath || file.fullPath == destPath) return;
+
+        await releaseFile(selectedIds);
+        settings.data.defaultPath = destPath;
 
         removeFromPlaylist(selectedIds);
 
@@ -787,7 +792,7 @@ const saveTags = (e:Mp.SaveTagsEvent) => {
 
 const closeTagEditor = () => Renderers.Tag?.hide();
 
-const addTagToFile = async (tag:string) => {
+const addTagToFile = async (tagName:string) => {
 
     const fileIndex = playlistFiles.findIndex(file => file.id == playlistSelection.selectedId)
 
@@ -796,7 +801,26 @@ const addTagToFile = async (tag:string) => {
     const currentTime = await releaseFile([playlistFiles[fileIndex].id])
 
     try{
-        await util.writeTag(playlistFiles[fileIndex], tag)
+        const file = playlistFiles[fileIndex];
+        const tag = `[${tagName}]-`;
+
+        const matchedTag = file.name.match(/^\[.*\]-/);
+        let fileName = file.name;
+        if(matchedTag){
+            fileName = matchedTag[0] == tag ? fileName.slice(matchedTag[0].length) : `${tag}${fileName.slice(matchedTag[0].length)}`;
+        }else{
+            fileName = `${tag}${fileName}`
+        }
+
+        const newPath = path.join(file.dir, fileName);
+
+        fs.renameSync(file.fullPath, newPath);
+
+        const newMediaFile = util.updateFile(newPath, file);
+        playlistFiles[fileIndex] = newMediaFile
+
+        respond("Playlist", "playlist-change", {files:playlistFiles})
+
     }catch(ex:any){
         dialogs.showErrorMessage(ex)
     }finally{
@@ -804,14 +828,6 @@ const addTagToFile = async (tag:string) => {
             loadMediaFile(currentTime)
         }
     }
-
-}
-
-const toggleCommentMenu = async () => {
-
-    const file = playlistFiles.find(file => file.id == playlistSelection.selectedIds[0])
-
-    await helper.toggleTagContextMenu(playlistMenu, playlistSelection.selectedIds.length == 1, file)
 
 }
 
@@ -872,8 +888,7 @@ const onPlaylistItemSelectionChange = (data:Mp.PlaylistItemSelectionChange) => {
     playlistSelection.selectedIds = data.selection.selectedIds
 }
 
-const onOpenPlaylistContext = async () => {
-    await toggleCommentMenu();
+const onOpenPlaylistContext = () => {
     playlistMenu.popup({window:Renderers.Playlist ?? undefined})
 }
 
@@ -907,6 +922,10 @@ const onShortcut = (e:Mp.ShortcutEvent) => {
 
 const onReleaseFile = (data:Mp.ReleaseFileResult) => {
     fileReleasePromise.resolve(data.currentTime);
+}
+
+const openConfigFileJson = async () => {
+    await shell.openPath(settings.getFilePath());
 }
 
 const registerIpcChannels = () => {
@@ -947,6 +966,7 @@ const registerIpcChannels = () => {
     addEventHandler("shortcut", onShortcut)
     addEventHandler("save-tags", saveTags)
     addEventHandler("close-tag", closeTagEditor)
+    addEventHandler("open-config-file", openConfigFileJson)
     addEventHandler("error", (e:Mp.ErrorEvent) => dialogs.showErrorMessage(e.message))
 
 }

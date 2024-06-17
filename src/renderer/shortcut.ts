@@ -20,6 +20,10 @@ const handlePlayerShortcut = (e:KeyboardEvent) => {
         return window.api.send("shortcut", {renderer:"Player", menu:"Capture"})
     }
 
+    if(e.ctrlKey && e.shiftKey && e.key === "P"){
+        return window.api.send("shortcut", {renderer:"Player", menu:"OpenConfigFile"})
+    }
+
     if(e.ctrlKey && e.key === "p"){
         return window.api.send("shortcut", {renderer:"Player", menu:"TogglePlaylistWindow"})
     }

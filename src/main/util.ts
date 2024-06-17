@@ -10,7 +10,6 @@ class Util{
     private convertDestFile:string | null;
     private command:ffmpeg.FfmpegCommand | null;
     private isDev:boolean;
-    private tags:Map<string, string> = new Map();
 
     constructor(){
         this.convertDestFile = null;
@@ -46,26 +45,6 @@ class Util{
 
         return result;
 
-    }
-
-    async getTag(fullPath:string){
-
-        if(this.tags.has(fullPath)) return this.tags.get(fullPath);
-
-        const tag = await win32props.getValue(fullPath, "Comment");
-        this.setTag(fullPath, tag)
-        return tag;
-    }
-
-    private setTag(fullPath:string, tag:string){
-        this.tags.set(fullPath, tag)
-    }
-
-    async writeTag(file:Mp.MediaFile, tag:string){
-        await win32props.setValue(file.fullPath, "Comment", tag)
-        const modifiedDate = new Date(file.date);
-        fs.utimesSync(file.fullPath, modifiedDate, modifiedDate);
-        this.setTag(file.fullPath, tag)
     }
 
     toFile(fullPath:string):Mp.MediaFile{
@@ -157,6 +136,16 @@ class Util{
         files.length = 0;
         files.push(...result)
 
+    }
+
+    writeTag(file:Mp.MediaFile, tagName:string){
+
+        const tag = `[${tagName}]-`;
+
+        if(file.name.startsWith(tag)) return;
+
+        const newName = path.join(file.dir, `${tag}${file.name}`);
+        fs.renameSync(file.fullPath, newName);
     }
 
     async getMediaMetadata(fullPath:string, format = false):Promise<Mp.Metadata>{

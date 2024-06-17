@@ -6,7 +6,6 @@ import play from "../assets/play.png"
 import pause from "../assets/pause.png"
 import forward from "../assets/forward.png"
 import backward from "../assets/backward.png"
-import util from "./util";
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -402,7 +401,6 @@ export default class Helper{
                 return {
                     id:tag,
                     label: tag,
-                    type:"checkbox",
                     click: () => onclick("Tag", tag)
                 }
         })
@@ -431,7 +429,6 @@ export default class Helper{
                     const item = new MenuItem({
                         id:key,
                         label: key,
-                        type:"checkbox",
                         click: () => onclick("Tag", key)
                     })
                     menu.submenu?.insert(index, item)
@@ -441,30 +438,6 @@ export default class Helper{
 
         }
 
-    }
-
-    async toggleTagContextMenu(parent:Electron.Menu, enable:boolean, selectedFile:Mp.MediaFile | undefined){
-
-        const menu = parent.getMenuItemById(ADD_TAG_MENU_Id);
-
-        if(menu){
-
-            menu.enabled = enable
-
-            if(!selectedFile) return
-
-            const tag = await util.getTag(selectedFile.fullPath)
-
-            menu.submenu?.items.forEach(menu => {
-
-                if(menu.id == tag){
-                    menu.checked = true;
-                }else{
-                    menu.checked = false;
-                }
-            })
-
-        }
     }
 
     createPlaylistSortContextMenu(onclick: Mp.PlaylistContextMenuCallback<"Sort" | "GroupBy">){

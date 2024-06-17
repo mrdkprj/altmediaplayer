@@ -45,7 +45,7 @@ export const ja:Mp.Labels = {
     cancel:"キャンセル",
     close:"閉じる",
     mute:"ミュート",
-    tags:"コメントにタグを追加",
+    tags:"ファイル名にタグを追加",
     manageTag:"タグを管理",
     mediaFile:"メディアファイル",
     selectConvertInputFile:"変換するファイルを選択",

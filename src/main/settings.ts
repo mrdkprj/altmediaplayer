@@ -34,10 +34,10 @@ const defaultSettings :Mp.Settings = {
 
 export default class Settings{
 
-    tempPath:string;
     data = defaultSettings;
 
     private file:string;
+    private tempPath:string;
 
     constructor(userDataPath:string, langs:string[]){
         this.tempPath = process.env.NODE_ENV === "development" ? path.join(__dirname, "..", "..", "temp") : path.join(userDataPath, "temp");
@@ -103,6 +103,10 @@ export default class Settings{
         })
 
         return config;
+    }
+
+    getFilePath(){
+        return this.file;
     }
 
     save(){

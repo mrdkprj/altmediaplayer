@@ -39,6 +39,7 @@ declare global {
         "media-state-change":Mp.MediaState;
         "close-tag": Mp.Event;
         "save-tags": Mp.SaveTagsEvent;
+        "open-config-file": Mp.Event;
         "error": Mp.ErrorEvent;
     }
 
@@ -94,6 +95,7 @@ declare global {
             "Theme": Mp.Theme;
             "Capture": null;
             "PictureInPicture": null;
+            "OpenConfigFile": null;
         }
 
         type PlaylistContextMenuSubTypeMap = {
@@ -112,6 +114,9 @@ declare global {
             "Move": null;
             "GroupBy": null;
         };
+
+        type PlayerContextMenuCallback<K extends keyof PlayerContextMenuSubTypeMap> = (menu:K, args?:Mp.PlayerContextMenuSubTypeMap[K]) => void
+        type PlaylistContextMenuCallback<K extends keyof PlaylistContextMenuSubTypeMap> = (menu:K, args?:Mp.PlaylistContextMenuSubTypeMap[K]) => void
 
         type VideoFrameSize = "SizeNone" | "360p" | "480p" | "720p" | "1080p";
         type VideoRotation = "RotationNone" | "90Clockwise" | "90CounterClockwise"

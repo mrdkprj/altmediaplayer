@@ -45,7 +45,7 @@ export const en:Mp.Labels = {
     cancel:"Cancel",
     close:"Close",
     mute:"Mute",
-    tags:"Add Tag To Comment",
+    tags:"Add Tag to File Name",
     manageTag:"Manage Tags",
     mediaFile:"Media File",
     selectConvertInputFile:"Select a file to convert",
