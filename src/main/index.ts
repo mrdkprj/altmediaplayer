@@ -116,6 +116,9 @@ const playlistContextMenuCallback = (menu:keyof Mp.PlaylistContextMenuSubTypeMap
         case "CopyFullpath":
             copyFileNameToClipboard(true);
             break;
+        case "PasteFilePath":
+            pasteFilePath();
+            break;
         case "Reveal":
             reveal();
             break;
@@ -587,6 +590,17 @@ const copyFileNameToClipboard = (fullPath:boolean) => {
 
     clipboard.writeText(names.join("\n"));
 
+}
+
+const pasteFilePath = () => {
+    const paths = clipboard.readText();
+    const lineBreak = paths.includes("\r") ? "\r\n" : "\n"
+    if(paths){
+        const files = paths.split(lineBreak).filter(filePath => fs.existsSync(filePath));
+        if(files.length){
+            addToPlaylist(files);
+        }
+    }
 }
 
 const toggleGroupBy = () => {

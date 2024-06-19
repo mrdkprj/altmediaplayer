@@ -113,6 +113,7 @@ declare global {
             "Rename": null;
             "Move": null;
             "GroupBy": null;
+            "PasteFilePath":null;
         };
 
         type PlayerContextMenuCallback<K extends keyof PlayerContextMenuSubTypeMap> = (menu:K, args?:Mp.PlayerContextMenuSubTypeMap[K]) => void
