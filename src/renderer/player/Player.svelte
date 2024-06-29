@@ -404,6 +404,10 @@
         showControl();
     };
 
+    const calculate = (base:number, value:number):number => {
+        return Number((base + value).toFixed(2))
+    }
+
     const onKeydown = (e:KeyboardEvent) => {
 
         if(e.ctrlKey && e.key === "r") e.preventDefault();
@@ -441,9 +445,9 @@
             showControl();
 
             if(e.shiftKey){
-                updateAmpLevel($appState.media.ampLevel + 0.01)
+                updateAmpLevel(calculate($appState.media.ampLevel, 0.01))
             }else{
-                updateVolume($appState.media.videoVolume + 0.01)
+                updateVolume(calculate($appState.media.videoVolume, 0.01))
             }
 
             return
@@ -454,9 +458,9 @@
             showControl();
 
             if(e.shiftKey){
-                updateAmpLevel($appState.media.ampLevel - 0.01)
+                updateAmpLevel(calculate($appState.media.ampLevel, -0.01))
             }else{
-                updateVolume($appState.media.videoVolume - 0.01)
+                updateVolume(calculate($appState.media.videoVolume, -0.01))
             }
 
             return

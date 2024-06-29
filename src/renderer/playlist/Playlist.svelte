@@ -298,6 +298,8 @@
 
     const endEditFileName = () => {
 
+        if(!$appState.rename.renaming) return;
+
         if(editor.data.name === $appState.rename.inputValue){
             endRename();
         }else{
@@ -439,7 +441,7 @@
     <div class="title-bar">
         <div class="close-btn" on:click={close} on:keydown={handleKeyEvent} role="button" tabindex="-1">&times;</div>
     </div>
-    <div class="playlist-viewport" class:group-by={$appState.sortType.groupBy} bind:this={fileListContainer} role="button" tabindex="-1" on:drop={onFileDrop} on:dragover={e => e.preventDefault()}>
+    <div class="playlist-viewport" class:group-by={$appState.sortType.groupBy} bind:this={fileListContainer} role="button" tabindex="-1" on:drop={onFileDrop} on:dragover={e => e.preventDefault()} on:scroll={endEditFileName}>
         {#if $appState.rename.renaming}
             <input
                 type="text"
