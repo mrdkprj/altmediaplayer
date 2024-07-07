@@ -75,7 +75,7 @@
         {/if}
 
         <div
-            title={file.dir}
+            title={file.name}
             id={file.id}
             draggable="true"
             class="playlist-item"
