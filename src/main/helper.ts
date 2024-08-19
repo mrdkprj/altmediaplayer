@@ -1,48 +1,71 @@
-import { BrowserWindow, Menu, MenuItem, nativeImage } from "electron"
-import path from "path"
+import { BrowserWindow, nativeImage } from "electron";
+import path from "path";
+import os from "os";
 import { translation } from "../translation/translation";
-import icon from "../assets/icon.ico"
-import play from "../assets/play.png"
-import pause from "../assets/pause.png"
-import forward from "../assets/forward.png"
-import backward from "../assets/backward.png"
+import icon from "../assets/icon.ico";
+import play from "../assets/play.png";
+import pause from "../assets/pause.png";
+import forward from "../assets/forward.png";
+import backward from "../assets/backward.png";
+import { getDefaultConfig, Menu, MenuItem, MenuItemConstructorOptions } from "node_wcpopup";
 
-const isDev = process.env.NODE_ENV === "development"
+const isDev = process.env.NODE_ENV === "development";
 
-const load = (window:BrowserWindow, name:RendererName) => {
-
-    if(isDev){
-        return window.loadURL(`${process.env["ELECTRON_RENDERER_URL"]}/${name.toLowerCase()}/index.html`)
+const load = (window: BrowserWindow, name: RendererName) => {
+    if (isDev) {
+        return window.loadURL(`${process.env["ELECTRON_RENDERER_URL"]}/${name.toLowerCase()}/index.html`);
     }
 
-    return window.loadFile(path.join(__dirname, `../renderer/${name.toLowerCase()}/index.html`))
+    return window.loadFile(path.join(__dirname, `../renderer/${name.toLowerCase()}/index.html`));
+};
 
-}
+const getHWND = (window: BrowserWindow) => {
+    const hwndBuffer = window.getNativeWindowHandle();
+    let hwnd;
+    if (os.endianness() == "LE") {
+        hwnd = hwndBuffer.readInt32LE();
+    } else {
+        hwnd = hwndBuffer.readInt32BE();
+    }
 
-export const ADD_TAG_MENU_Id = "addTag"
+    return hwnd;
+};
 
-export default class Helper{
+const getMenuConfig = (setting: Mp.Settings) => {
+    const config = getDefaultConfig();
+    config.color.dark.color = 0xefefef;
+    config.color.dark.backgroundColor = 0x202020;
+    config.corner = "Round";
+    config.theme = setting.theme == "dark" ? "dark" : "light";
+    config.size.borderSize = 0;
+    config.font.fontFamily = "Yu Gothic UI";
+    config.font.darkFontWeight = "Normal";
+    config.size.itemHorizontalPadding = 0;
+    return config;
+};
 
-    private settings:Mp.Settings;
-    private t:(key:keyof Mp.Labels) => string;
+export const ADD_TAG_MENU_Id = "addTag";
 
-    constructor(settings:Mp.Settings){
+export default class Helper {
+    private settings: Mp.Settings;
+    private t: (key: keyof Mp.Labels) => string;
+
+    constructor(settings: Mp.Settings) {
         this.settings = settings;
-        this.t = translation(this.settings.locale.lang)
+        this.t = translation(this.settings.locale.lang);
     }
 
-    createPlayerWindow(){
-
+    createPlayerWindow() {
         const window = new BrowserWindow({
             width: this.settings.bounds.width,
             height: this.settings.bounds.height,
-            x:this.settings.bounds.x,
-            y:this.settings.bounds.y,
+            x: this.settings.bounds.x,
+            y: this.settings.bounds.y,
             autoHideMenuBar: true,
             show: false,
             icon: nativeImage.createFromDataURL(icon),
             frame: false,
-            fullscreenable:true,
+            fullscreenable: true,
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
@@ -50,504 +73,494 @@ export default class Helper{
             },
         });
 
-        load(window, "Player")
+        load(window, "Player");
 
-        return window
-
+        return window;
     }
 
-    createPlaylistWindow(parent:BrowserWindow){
-
+    createPlaylistWindow(parent: BrowserWindow) {
         const window = new BrowserWindow({
             parent,
             width: this.settings.playlistBounds.width,
             height: this.settings.playlistBounds.height,
-            x:this.settings.playlistBounds.x,
-            y:this.settings.playlistBounds.y,
+            x: this.settings.playlistBounds.x,
+            y: this.settings.playlistBounds.y,
             autoHideMenuBar: true,
             show: false,
-            frame:false,
-            transparent:true,
+            frame: false,
+            transparent: true,
             minimizable: false,
             maximizable: false,
-            fullscreenable:false,
+            fullscreenable: false,
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
                 preload: path.join(__dirname, "../preload/preload.js"),
             },
-        })
+        });
 
-        load(window, "Playlist")
+        load(window, "Playlist");
 
         return window;
     }
 
-    createConvertWindow(parent:BrowserWindow){
-
+    createConvertWindow(parent: BrowserWindow) {
         const window = new BrowserWindow({
             parent,
-            width:640,
-            height:700,
+            width: 640,
+            height: 700,
             resizable: true,
             autoHideMenuBar: true,
             show: false,
-            frame:false,
-            modal:true,
+            frame: false,
+            modal: true,
             minimizable: false,
             maximizable: false,
-            fullscreenable:false,
+            fullscreenable: false,
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
                 preload: path.join(__dirname, "../preload/preload.js"),
             },
-        })
+        });
 
-        load(window, "Convert")
+        load(window, "Convert");
 
         return window;
     }
 
-    createTagEditorWindow(parent:BrowserWindow){
-
+    createTagEditorWindow(parent: BrowserWindow) {
         const window = new BrowserWindow({
             parent,
-            width:400,
-            height:600,
+            width: 400,
+            height: 600,
             minHeight: 250,
             resizable: true,
             autoHideMenuBar: true,
             show: false,
-            frame:false,
-            modal:false,
+            frame: false,
+            modal: false,
             minimizable: false,
             maximizable: false,
-            fullscreenable:false,
+            fullscreenable: false,
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
                 preload: path.join(__dirname, "../preload/preload.js"),
             },
-        })
+        });
 
-        load(window, "Tag")
+        load(window, "Tag");
 
         return window;
     }
 
-    createPlayerContextMenu(onclick: Mp.PlayerContextMenuCallback<keyof Mp.PlayerContextMenuSubTypeMap>){
-
-        const template:Electron.MenuItemConstructorOptions[] = [
+    createPlayerContextMenu(window: BrowserWindow, onClick: Mp.PlayerContextMenuCallback<keyof Mp.PlayerContextMenuSubTypeMap>) {
+        const template: MenuItemConstructorOptions[] = [
             {
                 label: this.t("playbackSpeed"),
-                submenu: this.playbackSpeedMenu(onclick)
+                submenu: this.playbackSpeedMenu(onClick),
             },
             {
                 label: this.t("seekSpeed"),
-                submenu: this.seekSpeedMenu(onclick)
+                submenu: this.seekSpeedMenu(onClick),
             },
             {
+                id: "FitToWindow",
                 label: this.t("fitToWindow"),
                 type: "checkbox",
                 checked: this.settings.video.fitToWindow,
-                click: () => onclick("FitToWindow"),
+                click: () => onClick("FitToWindow"),
             },
             { type: "separator" },
             {
                 label: this.t("playlist"),
-                accelerator: "CmdOrCtrl+P",
-                click: () => onclick("TogglePlaylistWindow")
+                accelerator: "Ctrl+P",
+                id: "TogglePlaylistWindow",
+                click: () => onClick("TogglePlaylistWindow"),
             },
             {
                 label: this.t("fullscreen"),
-                accelerator:"F11",
-                click: () => onclick("ToggleFullscreen"),
+                accelerator: "F11",
+                id: "ToggleFullscreen",
+                click: () => onClick("ToggleFullscreen"),
             },
             {
                 label: this.t("pip"),
-                click: () => onclick("PictureInPicture"),
+                id: "PictureInPicture",
+                click: () => onClick("PictureInPicture"),
             },
             { type: "separator" },
             {
                 label: this.t("capture"),
-                accelerator: "CmdOrCtrl+S",
-                click: () => onclick("Capture"),
+                accelerator: "Ctrl+S",
+                id: "Capture",
+                click: () => onClick("Capture"),
             },
             { type: "separator" },
             {
                 label: this.t("theme"),
-                submenu:this.themeMenu(onclick)
+                submenu: this.themeMenu(onClick),
             },
-        ]
+        ];
 
-        return Menu.buildFromTemplate(template)
+        const menu = new Menu();
+        menu.buildFromTemplateWithConfig(getHWND(window), template, getMenuConfig(this.settings));
+        return menu;
     }
 
-    private themeMenu(onclick: Mp.PlayerContextMenuCallback<"Theme">){
-        const type = "Theme"
-        const template:Electron.MenuItemConstructorOptions[] = [
+    private themeMenu(onClick: Mp.PlayerContextMenuCallback<"Theme">) {
+        const id = "Theme";
+        const template: MenuItem[] = [
             {
-                id: "themeLight",
+                value: "light",
                 label: this.t("light"),
-                type:"checkbox",
+                type: "radio",
                 checked: this.settings.theme === "light",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "light"))
+                click: () => onClick(id, "light"),
             },
             {
-                id: "themeDark",
+                value: "dark",
                 label: this.t("dark"),
-                type:"checkbox",
+                type: "radio",
                 checked: this.settings.theme === "dark",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "dark"))
+                click: () => onClick(id, "dark"),
             },
-        ]
+        ];
 
-        return Menu.buildFromTemplate(template);
+        return template;
     }
 
-    private playbackSpeedMenu(onclick: Mp.PlayerContextMenuCallback<"PlaybackSpeed">){
+    private playbackSpeedMenu(onClick: Mp.PlayerContextMenuCallback<"PlaybackSpeed">) {
+        const id = "PlaybackSpeed";
+        const template: MenuItem[] = [
+            {
+                label: "0.25",
+                type: "radio",
+                value: 0.25,
+                checked: this.settings.video.playbackSpeed == 0.25,
+                click: () => onClick(id, 0.25),
+            },
+            {
+                label: "0.5",
+                type: "radio",
+                value: 0.5,
+                checked: this.settings.video.playbackSpeed == 0.5,
+                click: () => onClick(id, 0.5),
+            },
+            {
+                label: "0.75",
+                type: "radio",
+                value: 0.75,
+                checked: this.settings.video.playbackSpeed == 0.75,
+                click: () => onClick(id, 0.75),
+            },
+            {
+                label: `1 - ${this.t("default")}`,
+                type: "radio",
+                value: 1,
+                checked: this.settings.video.playbackSpeed == 1,
+                click: () => onClick(id, 1),
+            },
+            {
+                label: "1.25",
+                type: "radio",
+                value: 1.25,
+                checked: this.settings.video.playbackSpeed == 1.25,
+                click: () => onClick(id, 1.25),
+            },
+            {
+                label: "1.5",
+                type: "radio",
+                value: 1.5,
+                checked: this.settings.video.playbackSpeed == 1.5,
+                click: () => onClick(id, 1.5),
+            },
+            {
+                label: "1.75",
+                type: "radio",
+                value: 1.75,
+                checked: this.settings.video.playbackSpeed == 1.75,
+                click: () => onClick(id, 1.75),
+            },
+            {
+                label: "2",
+                type: "radio",
+                value: 2,
+                checked: this.settings.video.playbackSpeed == 2,
+                click: () => onClick(id, 2),
+            },
+        ];
 
-        const type = "PlaybackSpeed"
-        const template:Electron.MenuItemConstructorOptions[] = [
-            {
-                id: "playbackrate0",
-                label:"0.25",
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.25))
-            },
-            {
-                id: "playbackrate1",
-                label:"0.5",
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.5))
-            },
-            {
-                id: "playbackrate2",
-                label:"0.75",
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.75))
-            },
-            {
-                id: "playbackrate3",
-                label:`1 - ${this.t("default")}`,
-                type:"checkbox",
-                checked:true,
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 1))
-            },
-            {
-                id: "playbackrate4",
-                label:"1.25",
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 1.25))
-            },
-            {
-                id: "playbackrate5",
-                label:"1.5",
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 1.5))
-            },
-            {
-                id: "playbackrate6",
-                label:"1.75",
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 1.75))
-            },
-            {
-                id: "playbackrate7",
-                label:"2",
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 2))
-            },
-        ]
-
-        return Menu.buildFromTemplate(template);
+        return template;
     }
 
-    private seekSpeedMenu(onclick: Mp.PlayerContextMenuCallback<"SeekSpeed">){
+    private seekSpeedMenu(onClick: Mp.PlayerContextMenuCallback<"SeekSpeed">) {
+        const id = "SeekSpeed";
+        const template: MenuItem[] = [
+            {
+                label: `0.03${this.t("second")}`,
+                type: "radio",
+                value: 0.03,
+                checked: this.settings.video.seekSpeed == 0.03,
+                click: () => onClick(id, 0.03),
+            },
+            {
+                label: `0.05${this.t("second")}`,
+                type: "radio",
+                value: 0.05,
+                checked: this.settings.video.seekSpeed == 0.05,
+                click: () => onClick(id, 0.05),
+            },
+            {
+                label: `0.1${this.t("second")}`,
+                type: "radio",
+                value: 0.1,
+                checked: this.settings.video.seekSpeed == 0.1,
+                click: () => onClick(id, 0.1),
+            },
+            {
+                label: `0.5${this.t("second")}`,
+                type: "radio",
+                value: 0.5,
+                checked: this.settings.video.seekSpeed == 0.5,
+                click: () => onClick(id, 0.5),
+            },
+            {
+                label: `1${this.t("second")}`,
+                type: "radio",
+                value: 1,
+                checked: this.settings.video.seekSpeed == 1,
+                click: () => onClick(id, 1),
+            },
+            {
+                label: `3${this.t("second")}`,
+                type: "radio",
+                value: 3,
+                checked: this.settings.video.seekSpeed == 3,
+                click: () => onClick(id, 3),
+            },
+            {
+                label: `5${this.t("second")} - ${this.t("default")}`,
+                type: `radio`,
+                value: 5,
+                checked: this.settings.video.seekSpeed == 5,
+                click: () => onClick(id, 5),
+            },
+            {
+                label: `10${this.t("second")}`,
+                type: "radio",
+                value: 10,
+                checked: this.settings.video.seekSpeed == 10,
+                click: () => onClick(id, 10),
+            },
+            {
+                label: `20${this.t("second")}`,
+                type: "radio",
+                value: 20,
+                checked: this.settings.video.seekSpeed == 20,
+                click: () => onClick(id, 20),
+            },
+        ];
 
-        const type = "SeekSpeed"
-        const template:Electron.MenuItemConstructorOptions[] = [
-            {
-                id: "seekspeed0",
-                label:`0.03${this.t("second")}`,
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.03))
-            },
-            {
-                id: "seekspeed1",
-                label:`0.05${this.t("second")}`,
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.05))
-            },
-            {
-                id: "seekspeed2",
-                label:`0.1${this.t("second")}`,
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.1))
-            },
-            {
-                id: "seekspeed3",
-                label:`0.5${this.t("second")}`,
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 0.5))
-            },
-            {
-                id: "seekspeed4",
-                label:`1${this.t("second")}`,
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 1))
-            },
-            {
-                id: "seekspeed5",
-                label:`3${this.t("second")}`,
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 3))
-            },
-            {
-                id: "seekspeed6",
-                label:`5${this.t("second")} - ${this.t("default")}`,
-                type:`checkbox`,
-                checked:true,
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 5))
-            },
-            {
-                id: "seekspeed7",
-                label:`10${this.t("second")}`,
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 10))
-            },
-            {
-                id: "seekspeed8",
-                label:`20${this.t("second")}`,
-                type:"checkbox",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, 20))
-            },
-        ]
-
-        return Menu.buildFromTemplate(template);
+        return template;
     }
 
-    createPlaylistContextMenu(onclick: Mp.PlaylistContextMenuCallback<keyof Mp.PlaylistContextMenuSubTypeMap>){
-
-        const template:Electron.MenuItemConstructorOptions[] = [
+    createPlaylistContextMenu(window: BrowserWindow, onClick: Mp.PlaylistContextMenuCallback<keyof Mp.PlaylistContextMenuSubTypeMap>) {
+        const template: MenuItemConstructorOptions[] = [
             {
                 label: this.t("remove"),
                 accelerator: "Delete",
-                click: () => onclick("Remove")
+                id: "Remove",
+                click: () => onClick("Remove"),
             },
             {
                 label: this.t("trash"),
                 accelerator: "Shift+Delete",
-                click: () => onclick("Trash")
+                id: "Trash",
+                click: () => onClick("Trash"),
             },
             { type: "separator" },
             {
                 label: this.t("copyName"),
-                accelerator: "CmdOrCtrl+C",
-                click: () => onclick("CopyFileName")
+                accelerator: "Ctrl+C",
+                id: "CopyFileName",
+                click: () => onClick("CopyFileName"),
             },
             {
                 label: this.t("copyFullpath"),
-                accelerator: "CmdOrCtrl+Shift+C",
-                click: () => onclick("CopyFullpath")
+                accelerator: "Ctrl+Shift+C",
+                id: "CopyFullpath",
+                click: () => onClick("CopyFullpath"),
             },
             {
                 label: this.t("reveal"),
-                accelerator: "CmdOrCtrl+R",
-                click: () => onclick("Reveal")
+                accelerator: "Ctrl+R",
+                id: "Reveal",
+                click: () => onClick("Reveal"),
             },
             { type: "separator" },
             {
                 label: this.t("rename"),
                 accelerator: "F2",
-                click: () => onclick("Rename")
+                id: "Rename",
+                click: () => onClick("Rename"),
             },
             {
                 label: this.t("metadata"),
-                click: () => onclick("Metadata")
+                id: "Metadata",
+                click: () => onClick("Metadata"),
             },
             {
                 label: this.t("convert"),
-                click: () => onclick("Convert")
+                id: "Convert",
+                click: () => onClick("Convert"),
             },
             { type: "separator" },
             {
-                id:ADD_TAG_MENU_Id,
+                id: ADD_TAG_MENU_Id,
                 label: this.t("tags"),
-                submenu:this.createTagContextMenu(onclick)
+                submenu: this.createTagContextMenu(onClick),
             },
             {
                 label: this.t("manageTag"),
-                click: () => onclick("ManageTags")
+                id: "ManageTags",
+                click: () => onClick("ManageTags"),
             },
             { type: "separator" },
             {
                 label: this.t("moveFile"),
-                click: () => onclick("Move")
+                id: "Move",
+                click: () => onClick("Move"),
             },
             { type: "separator" },
             {
                 label: this.t("clearList"),
-                click: () => onclick("RemoveAll")
+                id: "RemoveAll",
+                click: () => onClick("RemoveAll"),
             },
-        ]
+        ];
 
-        return Menu.buildFromTemplate(template);
+        const menu = new Menu();
+        menu.buildFromTemplateWithConfig(getHWND(window), template, getMenuConfig(this.settings));
+        return menu;
     }
 
-    private createTagContextMenu(onclick: Mp.PlaylistContextMenuCallback<"Tag">){
-        const template:Electron.MenuItemConstructorOptions[] = this.settings.tags.sort().map(tag => {
-                return {
-                    id:tag,
-                    label: tag,
-                    click: () => onclick("Tag", tag)
-                }
-        })
-        return Menu.buildFromTemplate(template);
+    private createTagContextMenu(onClick: Mp.PlaylistContextMenuCallback<"Tag">) {
+        const template: MenuItem[] = this.settings.tags.sort().map((tag) => {
+            return {
+                id: tag,
+                value: tag,
+                label: tag,
+                click: () => onClick("Tag", tag),
+            };
+        });
+        return template;
     }
 
-    refreshTagContextMenu(parent:Electron.Menu, tags:string[], onclick: Mp.PlaylistContextMenuCallback<"Tag">){
-
+    refreshTagContextMenu(parent: Menu, tags: string[], onClick: Mp.PlaylistContextMenuCallback<"Tag">) {
         const menu = parent.getMenuItemById(ADD_TAG_MENU_Id);
 
-        if(menu && menu.submenu){
-            const menuItemMap = menu.submenu.items.reduce((obj:{[key:string]:Electron.MenuItem}, item) => (obj[item.id] = item, obj), {})
-            const keys = [...new Set([...tags,...Object.keys(menuItemMap)])].sort()
+        if (menu && menu.submenu) {
+            const menuItemMap = menu.submenu.items().reduce((obj: { [key: string]: MenuItem }, item) => ((obj[item.id ?? ""] = item), obj), {});
+            const keys = [...new Set([...tags, ...Object.keys(menuItemMap)])].sort();
 
-            keys.forEach((key,index) => {
-
-                if(menuItemMap[key] && tags.includes(key)){
-                    menuItemMap[key].enabled = true;
+            keys.forEach((key, index) => {
+                if (menuItemMap[key] && !tags.includes(key)) {
+                    menu.submenu?.remove(menuItemMap[key]);
                 }
 
-                if(menuItemMap[key] && !tags.includes(key)){
-                    menuItemMap[key].enabled = false;
-                }
-
-                if(!menuItemMap[key] && tags.includes(key)){
-                    const item = new MenuItem({
-                        id:key,
+                if (!menuItemMap[key] && tags.includes(key)) {
+                    const item: MenuItem = {
+                        id: key,
                         label: key,
-                        click: () => onclick("Tag", key)
-                    })
-                    menu.submenu?.insert(index, item)
+                        click: () => onClick("Tag", key),
+                    };
+                    menu.submenu?.insert(index, item);
                 }
-
-            })
-
+            });
         }
-
     }
 
-    createPlaylistSortContextMenu(onclick: Mp.PlaylistContextMenuCallback<"Sort" | "GroupBy">){
-
-        const type = "Sort"
-        const toggleExcepts = ["groupby"]
-        const template:Electron.MenuItemConstructorOptions[] = [
+    createPlaylistSortContextMenu(window: BrowserWindow, onClick: Mp.PlaylistContextMenuCallback<"Sort" | "GroupBy">) {
+        const id = "Sort";
+        const template: MenuItem[] = [
             {
-                id:"groupby",
                 label: this.t("groupBy"),
                 type: "checkbox",
                 checked: this.settings.sort.groupBy,
-                click: () => onclick("GroupBy")
+                click: () => onClick("GroupBy"),
             },
             { type: "separator" },
             {
-                id: "NameAsc",
+                name: "sort",
                 label: this.t("nameAsc"),
-                type: "checkbox",
+                type: "radio",
                 checked: this.settings.sort.order === "NameAsc",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type, "NameAsc"), toggleExcepts)
+                value: "NameAsc",
+                click: () => onClick(id, "NameAsc"),
             },
             {
-                id: "NameDesc",
+                name: "sort",
                 label: this.t("nameDesc"),
-                type: "checkbox",
+                type: "radio",
                 checked: this.settings.sort.order === "NameDesc",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"NameDesc"), toggleExcepts)
+                value: "NameDesc",
+                click: () => onClick(id, "NameDesc"),
             },
             {
-                id: "DateAsc",
+                name: "sort",
                 label: this.t("dateAsc"),
-                type: "checkbox",
+                type: "radio",
                 checked: this.settings.sort.order === "DateAsc",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateAsc"), toggleExcepts)
+                value: "DateAsc",
+                click: () => onClick(id, "DateAsc"),
             },
             {
-                id: "DateDesc",
+                name: "sort",
                 label: this.t("dateDesc"),
-                type: "checkbox",
+                type: "radio",
                 checked: this.settings.sort.order === "DateDesc",
-                click: (menuItem) => this.toggleMenuItemCheckbox(menuItem, () => onclick(type,"DateDesc"), toggleExcepts)
+                value: "DateDesc",
+                click: () => onClick(id, "DateDesc"),
             },
-        ]
+        ];
 
-        return Menu.buildFromTemplate(template);
+        const menu = new Menu();
+        menu.buildFromTemplateWithConfig(getHWND(window), template, getMenuConfig(this.settings));
+        return menu;
     }
 
-    getImage(){
-        return nativeImage.createFromDataURL(play).toDataURL()
+    getImage() {
+        return nativeImage.createFromDataURL(play).toDataURL();
     }
 
-    createThumButtons(onclick: (button:Mp.ThumbButtonType) => void){
-
-        const playThumbButton:Electron.ThumbarButton = {
+    createThumButtons(onClick: (button: Mp.ThumbButtonType) => void) {
+        const playThumbButton: Electron.ThumbarButton = {
             tooltip: this.t("play"),
             icon: nativeImage.createFromDataURL(play),
-            click: () => onclick("Play"),
-        }
-        const pauseThumbButton:Electron.ThumbarButton = {
+            click: () => onClick("Play"),
+        };
+        const pauseThumbButton: Electron.ThumbarButton = {
             tooltip: this.t("pause"),
             icon: nativeImage.createFromDataURL(pause),
-            click: () => onclick("Pause"),
-        }
-        const prevThumbButton:Electron.ThumbarButton = {
+            click: () => onClick("Pause"),
+        };
+        const prevThumbButton: Electron.ThumbarButton = {
             tooltip: this.t("previous"),
             icon: nativeImage.createFromDataURL(backward),
-            click: () => onclick("Previous")
-        }
-        const nextThumbButton:Electron.ThumbarButton = {
+            click: () => onClick("Previous"),
+        };
+        const nextThumbButton: Electron.ThumbarButton = {
             tooltip: this.t("next"),
             icon: nativeImage.createFromDataURL(forward),
-            click: () => onclick("Next")
-        }
+            click: () => onClick("Next"),
+        };
 
-        const thumbButtonsOptionsPaused:Electron.ThumbarButton[] = [
-            prevThumbButton,
-            playThumbButton,
-            nextThumbButton
-        ]
+        const thumbButtonsOptionsPaused: Electron.ThumbarButton[] = [prevThumbButton, playThumbButton, nextThumbButton];
 
-        const thumbButtonsOptionsPlayed:Electron.ThumbarButton[] = [
-            prevThumbButton,
-            pauseThumbButton,
-            nextThumbButton
-        ]
+        const thumbButtonsOptionsPlayed: Electron.ThumbarButton[] = [prevThumbButton, pauseThumbButton, nextThumbButton];
 
-        return [
-            thumbButtonsOptionsPaused,
-            thumbButtonsOptionsPlayed
-        ]
+        return [thumbButtonsOptionsPaused, thumbButtonsOptionsPlayed];
     }
-
-    private toggleMenuItemCheckbox(menuItem:Electron.MenuItem, onclick:() => void, excepts?:string[]){
-
-        menuItem.menu.items.forEach((item:Electron.MenuItem) => {
-
-            if(excepts && excepts.includes(item.id)){
-                return;
-            }
-
-            if(item.id === menuItem.id){
-                item.checked = true;
-            }else{
-                item.checked = false;
-            }
-
-        })
-
-        onclick()
-    }
-
 }

@@ -1,7 +1,7 @@
 {
-  "name": "altmediaplayer",
-  "productName": "AltMediaPlayer",
-  "version": "1.1.2",
+  "name": "altmediaplayer2",
+  "productName": "AltMediaPlayer2",
+  "version": "1.1.1",
   "description": "MediaPlayer",
   "main": "out/main/index.js",
   "scripts": {
@@ -22,8 +22,8 @@
   "license": "MIT",
   "dependencies": {
     "fluent-ffmpeg": "^2.1.2",
-    "node_wcpopup": "git+https://github.com/mrdkprj/node_wcpopup.git",
-    "win32props": "^0.3.2"
+    "win32props": "^0.3.2",
+    "node_wcpopup":"git+https://github.com/mrdkprj/node_wcpopup.git"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
@@ -31,7 +31,7 @@
     "@types/node": "^20.10.5",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
-    "electron": "^31.0.0",
+    "electron": "^25.1.0",
     "electron-builder": "^23.6.0",
     "electron-vite": "^2.0.0",
     "eslint": "^8.56.0",

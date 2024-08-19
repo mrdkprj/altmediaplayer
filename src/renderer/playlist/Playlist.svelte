@@ -16,11 +16,11 @@
 
     const onContextMenu = (e:MouseEvent) => {
         e.preventDefault()
-        window.api.send("open-playlist-context", {})
+        window.api.send("open-playlist-context", {x:e.screenX, y:e.screenY})
     }
 
     const openSortMenu = (e:MouseEvent) => {
-        window.api.send("open-sort-context", {x:e.clientX, y:e.clientY})
+        window.api.send("open-sort-context", {x:e.screenX, y:e.screenY})
     }
 
     const onPlaylistItemMousedown = (e:MouseEvent) => {

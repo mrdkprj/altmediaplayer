@@ -1,52 +1,57 @@
-import {app, ipcMain, clipboard, shell, protocol, nativeTheme} from "electron";
+import { app, ipcMain, clipboard, shell, protocol, nativeTheme } from "electron";
 import fs from "fs";
 import path from "path";
-import url from "url"
+import url from "url";
 import Helper from "./helper";
 import util from "./util";
 import Settings from "./settings";
 import Dialogs from "./dialogs";
 import Deferred from "./deferred";
 import { EmptyFile, FORWARD, BACKWARD, PlayableAudioExtentions } from "../constants";
+import { Menu } from "node_wcpopup";
 
 const locked = app.requestSingleInstanceLock(process.argv);
 
-if(!locked) {
-    app.exit()
+if (!locked) {
+    app.exit();
 }
 
-protocol.registerSchemesAsPrivileged([
-    { scheme: "app", privileges: { bypassCSP: true } },
-])
+protocol.registerSchemesAsPrivileged([{ scheme: "app", privileges: { bypassCSP: true } }]);
 
 const settings = new Settings(app.getPath("userData"), app.getPreferredSystemLanguages());
 const helper = new Helper(settings.data);
-const dialogs = new Dialogs(settings.data)
+const dialogs = new Dialogs(settings.data);
 
-const Renderers:Renderer = {
-    Player:null,
-    Playlist:null,
-    Convert:null,
-    Tag:null,
-}
+const Renderers: Renderer = {
+    Player: null,
+    Playlist: null,
+    Convert: null,
+    Tag: null,
+};
 
-const playlistFiles:Mp.MediaFile[] = []
-const playlistSelection:Mp.PlaylistItemSelection = {selectedId:"", selectedIds:[]};
+const Menus: { [key in Mp.ContextMenuName]: Menu } = {
+    Player: new Menu(),
+    Playlist: new Menu(),
+    Sort: new Menu(),
+};
 
-const additionalFiles:string[] = [];
-const secondInstanceState:Mp.SecondInstanceState = {
-    timeout:null,
-    requireInitPlaylist:false,
-}
+const playlistFiles: Mp.MediaFile[] = [];
+const playlistSelection: Mp.PlaylistItemSelection = { selectedId: "", selectedIds: [] };
 
-let playStatus:Mp.PlayStatus = "stopped";
+const additionalFiles: string[] = [];
+const secondInstanceState: Mp.SecondInstanceState = {
+    timeout: null,
+    requireInitPlaylist: false,
+};
+
+let playStatus: Mp.PlayStatus = "stopped";
 let doShuffle = false;
 let currentIndex = -1;
-let randomIndices:number[] = [];
-let fileReleasePromise:Deferred<number>;
+let randomIndices: number[] = [];
+let fileReleasePromise: Deferred<number>;
 
-const thumbButtonCallback = (button:Mp.ThumbButtonType) => {
-    switch(button){
+const thumbButtonCallback = (button: Mp.ThumbButtonType) => {
+    switch (button) {
         case "Next":
             changeIndex(FORWARD);
             break;
@@ -57,15 +62,15 @@ const thumbButtonCallback = (button:Mp.ThumbButtonType) => {
             togglePlay();
             break;
         case "Previous":
-            changeIndex(BACKWARD)
+            changeIndex(BACKWARD);
             break;
     }
-}
+};
 
-const thumButtons = helper.createThumButtons(thumbButtonCallback)
+const thumButtons = helper.createThumButtons(thumbButtonCallback);
 
-const playerContextMenuCallback = (menu:keyof Mp.PlayerContextMenuSubTypeMap, args?:Mp.PlayerContextMenuSubTypeMap[keyof Mp.PlayerContextMenuSubTypeMap]) => {
-    switch(menu){
+const playerContextMenuCallback = (menu: keyof Mp.PlayerContextMenuSubTypeMap, args?: Mp.PlayerContextMenuSubTypeMap[keyof Mp.PlayerContextMenuSubTypeMap]) => {
+    switch (menu) {
         case "PlaybackSpeed":
             changePlaybackSpeed(Number(args));
             break;
@@ -82,7 +87,7 @@ const playerContextMenuCallback = (menu:keyof Mp.PlayerContextMenuSubTypeMap, ar
             respond("Player", "picture-in-picture", {});
             break;
         case "ToggleFullscreen":
-            respond("Player", "toggle-fullscreen", {})
+            respond("Player", "toggle-fullscreen", {});
             break;
         case "Theme":
             changeTheme(args as Mp.Theme);
@@ -94,13 +99,10 @@ const playerContextMenuCallback = (menu:keyof Mp.PlayerContextMenuSubTypeMap, ar
             openConfigFileJson();
             break;
     }
-}
+};
 
-const playerMenu = helper.createPlayerContextMenu(playerContextMenuCallback)
-
-const playlistContextMenuCallback = (menu:keyof Mp.PlaylistContextMenuSubTypeMap, args?:Mp.PlaylistContextMenuSubTypeMap[keyof Mp.PlaylistContextMenuSubTypeMap]) => {
-
-    switch(menu){
+const playlistContextMenuCallback = (menu: keyof Mp.PlaylistContextMenuSubTypeMap, args?: Mp.PlaylistContextMenuSubTypeMap[keyof Mp.PlaylistContextMenuSubTypeMap]) => {
+    switch (menu) {
         case "Remove":
             removeFromPlaylist(playlistSelection.selectedIds);
             break;
@@ -132,7 +134,7 @@ const playlistContextMenuCallback = (menu:keyof Mp.PlaylistContextMenuSubTypeMap
             changeSortOrder(args as Mp.SortOrder);
             break;
         case "Rename":
-            respond("Playlist", "start-rename", {})
+            respond("Playlist", "start-rename", {});
             break;
         case "Move":
             moveFile(playlistSelection.selectedIds);
@@ -147,23 +149,19 @@ const playlistContextMenuCallback = (menu:keyof Mp.PlaylistContextMenuSubTypeMap
             openTagEditor();
             break;
     }
-}
-
-const playlistMenu = helper.createPlaylistContextMenu(playlistContextMenuCallback)
-const sortContext = helper.createPlaylistSortContextMenu(playlistContextMenuCallback)
+};
 
 const setSecondInstanceTimeout = () => {
     secondInstanceState.timeout = setTimeout(() => {
-        afterSecondInstance()
+        afterSecondInstance();
     }, 1000);
-}
+};
 
 const afterSecondInstance = () => {
-
-    if(secondInstanceState.requireInitPlaylist){
-        initPlaylist(additionalFiles)
-    }else{
-        addToPlaylist(additionalFiles)
+    if (secondInstanceState.requireInitPlaylist) {
+        initPlaylist(additionalFiles);
+    } else {
+        addToPlaylist(additionalFiles);
     }
 
     additionalFiles.length = 0;
@@ -171,63 +169,59 @@ const afterSecondInstance = () => {
     secondInstanceState.timeout = null;
     secondInstanceState.requireInitPlaylist = true;
 
-    if(!Renderers.Player) return;
+    if (!Renderers.Player) return;
 
-    if(Renderers.Player.isFullScreen()){
-        respond("Player", "toggle-fullscreen", {})
+    if (Renderers.Player.isFullScreen()) {
+        respond("Player", "toggle-fullscreen", {});
     }
 
     Renderers.Player.show();
 
-    if(settings.data.isMaximized){
+    if (settings.data.isMaximized) {
         Renderers.Player.maximize();
     }
-}
+};
 
-app.on("second-instance", (_event:Electron.Event, _argv:string[], _workingDirectory:string, additionalData:any) => {
-
-    if(!secondInstanceState.timeout){
+app.on("second-instance", (_event: Electron.Event, _argv: string[], _workingDirectory: string, additionalData: any) => {
+    if (!secondInstanceState.timeout) {
         setSecondInstanceTimeout();
     }
 
-    additionalFiles.push(...util.extractFilesFromArgv(additionalData))
-
-})
+    additionalFiles.push(...util.extractFilesFromArgv(additionalData));
+});
 
 app.on("ready", () => {
-
-    nativeTheme.themeSource = settings.data.theme
+    nativeTheme.themeSource = settings.data.theme;
 
     setSecondInstanceTimeout();
 
     registerIpcChannels();
 
     protocol.registerFileProtocol("app", (request, callback) => {
-
-        const filePath = url.fileURLToPath(
-            "file://" + request.url.slice("app://".length),
-        );
+        const filePath = url.fileURLToPath("file://" + request.url.slice("app://".length));
 
         callback(filePath);
     });
 
     Renderers.Player = helper.createPlayerWindow();
-    Renderers.Playlist = helper.createPlaylistWindow(Renderers.Player)
-    Renderers.Convert = helper.createConvertWindow(Renderers.Player)
-    Renderers.Tag = helper.createTagEditorWindow(Renderers.Player)
+    Renderers.Playlist = helper.createPlaylistWindow(Renderers.Player);
+    Renderers.Convert = helper.createConvertWindow(Renderers.Player);
+    Renderers.Tag = helper.createTagEditorWindow(Renderers.Player);
+
+    Menus.Player = helper.createPlayerContextMenu(Renderers.Player, playerContextMenuCallback);
+    Menus.Playlist = helper.createPlaylistContextMenu(Renderers.Playlist, playlistContextMenuCallback);
+    Menus.Sort = helper.createPlaylistSortContextMenu(Renderers.Playlist, playlistContextMenuCallback);
 
     Renderers.Player.on("ready-to-show", () => {
-
-        if(settings.data.isMaximized){
+        if (settings.data.isMaximized) {
             Renderers.Player?.maximize();
         }
 
-        Renderers.Player?.setBounds(settings.data.bounds)
-        Renderers.Player?.setThumbarButtons(thumButtons[0])
+        Renderers.Player?.setBounds(settings.data.bounds);
+        Renderers.Player?.setThumbarButtons(thumButtons[0]);
 
         onPlayerReady();
-
-    })
+    });
 
     Renderers.Player.on("maximize", onMaximize);
     Renderers.Player.on("unmaximize", onUnmaximize);
@@ -235,45 +229,41 @@ app.on("ready", () => {
     Renderers.Player.on("closed", () => {
         Renderers.Player = null;
     });
-
 });
 
-const respond = <K extends keyof RendererChannelEventMap>(rendererName:RendererName, channel:K, data:RendererChannelEventMap[K]) => {
+const respond = <K extends keyof RendererChannelEventMap>(rendererName: RendererName, channel: K, data: RendererChannelEventMap[K]) => {
     Renderers[rendererName]?.webContents.send(channel, data);
-}
+};
 
 const onPlayerReady = () => {
-
     Renderers.Player?.show();
 
-    if(settings.data.playlistVisible){
+    if (settings.data.playlistVisible) {
         Renderers.Playlist?.show();
     }
 
-    respond("Player", "ready", {settings:settings.data});
-    respond("Playlist", "ready", {settings:settings.data});
-    respond("Convert", "ready", {settings:settings.data});
+    respond("Player", "ready", { settings: settings.data });
+    respond("Playlist", "ready", { settings: settings.data });
+    respond("Convert", "ready", { settings: settings.data });
 
     togglePlay();
 
-    initPlaylist(util.extractFilesFromArgv())
+    initPlaylist(util.extractFilesFromArgv());
+};
 
-}
-
-const loadMediaFile = (startFrom?:number) => {
+const loadMediaFile = (startFrom?: number) => {
     const currentFile = getCurrentFile();
 
-    respond("Playlist", "load-file", {currentFile, status:playStatus, startFrom})
-    respond("Player", "load-file", {currentFile, status:playStatus, startFrom})
-}
+    respond("Playlist", "load-file", { currentFile, status: playStatus, startFrom });
+    respond("Player", "load-file", { currentFile, status: playStatus, startFrom });
+};
 
-const initPlaylist = (fullPaths:string[]) => {
-
+const initPlaylist = (fullPaths: string[]) => {
     reset();
 
-    fullPaths.map(fullPath => util.toFile(fullPath)).forEach(file => playlistFiles.push(file))
+    fullPaths.map((fullPath) => util.toFile(fullPath)).forEach((file) => playlistFiles.push(file));
 
-    if(!playlistFiles.length) return;
+    if (!playlistFiles.length) return;
 
     currentIndex = 0;
 
@@ -281,277 +271,253 @@ const initPlaylist = (fullPaths:string[]) => {
 
     shuffleList();
 
-    changePlayStatus("playing")
+    changePlayStatus("playing");
 
     loadMediaFile();
+};
 
-}
+const addToPlaylist = (fullPaths: string[]) => {
+    const newFiles = fullPaths.filter((fullPath) => playlistFiles.findIndex((file) => file.fullPath == fullPath) < 0).map((fullPath) => util.toFile(fullPath));
 
-const addToPlaylist = (fullPaths:string[]) => {
-
-    const newFiles = fullPaths.filter(fullPath => playlistFiles.findIndex(file => file.fullPath == fullPath) < 0).map(fullPath => util.toFile(fullPath));
-
-    playlistFiles.push(...newFiles)
+    playlistFiles.push(...newFiles);
 
     sortPlayList();
 
     shuffleList();
 
-    if(playlistFiles.length && currentIndex < 0){
+    if (playlistFiles.length && currentIndex < 0) {
         currentIndex = 0;
         loadMediaFile();
     }
-
-}
+};
 
 const getCurrentFile = () => {
+    if (currentIndex < 0) return EmptyFile;
 
-    if(currentIndex < 0) return EmptyFile;
-
-    if(!playlistFiles.length) return EmptyFile;
+    if (!playlistFiles.length) return EmptyFile;
 
     return playlistFiles[currentIndex];
-
-}
+};
 
 const reset = () => {
     playlistFiles.length = 0;
     randomIndices.length = 0;
     playlistSelection.selectedId = "";
-    playlistSelection.selectedIds = []
+    playlistSelection.selectedIds = [];
     currentIndex = -1;
-    respond("Playlist", "clear-playlist", {})
-}
+    respond("Playlist", "clear-playlist", {});
+};
 
-const changePlayStatus = (status:Mp.PlayStatus) => {
+const changePlayStatus = (status: Mp.PlayStatus) => {
     playStatus = status;
-}
+};
 
 const onUnmaximize = () => {
     settings.data.isMaximized = false;
-    respond("Player", "after-toggle-maximize", {settings:settings.data})
-}
+    respond("Player", "after-toggle-maximize", { settings: settings.data });
+};
 
 const onMaximize = () => {
     settings.data.isMaximized = true;
-    respond("Player","after-toggle-maximize", {settings:settings.data})
-}
+    respond("Player", "after-toggle-maximize", { settings: settings.data });
+};
 
 const toggleMaximize = () => {
+    if (!Renderers.Player) return;
 
-    if(!Renderers.Player) return;
-
-    if(Renderers.Player.isMaximized()){
+    if (Renderers.Player.isMaximized()) {
         Renderers.Player.unmaximize();
-        Renderers.Player.setBounds(settings.data.bounds)
-    }else{
-        settings.data.bounds = Renderers.Player.getBounds()
+        Renderers.Player.setBounds(settings.data.bounds);
+    } else {
+        settings.data.bounds = Renderers.Player.getBounds();
         Renderers.Player.maximize();
     }
-}
+};
 
 const saveSettings = () => {
+    if (!Renderers.Player || !Renderers.Playlist) return;
 
-    if(!Renderers.Player || !Renderers.Playlist) return;
-
-    try{
+    try {
         settings.data.isMaximized = Renderers.Player.isMaximized();
-        settings.data.playlistBounds = Renderers.Playlist.getBounds()
+        settings.data.playlistBounds = Renderers.Playlist.getBounds();
 
         settings.save();
-    }catch(ex){
-        dialogs.showErrorMessage(ex)
+    } catch (ex) {
+        dialogs.showErrorMessage(ex);
     }
-}
+};
 
 const closeWindow = () => {
     saveSettings();
     app.quit();
-}
+};
 
 const shuffleList = () => {
+    if (!doShuffle) return;
 
-    if(!doShuffle) return;
+    const target = new Array(playlistFiles.length)
+        .fill(undefined)
+        .map((_v, i) => i)
+        .filter((i) => i !== currentIndex);
+    randomIndices = util.shuffle(target);
+};
 
-    const target = new Array(playlistFiles.length).fill(undefined).map((_v, i) => i).filter(i => i !== currentIndex);
-    randomIndices = util.shuffle(target)
-
-}
-
-const getRandomIndex = (value:number) => {
-
-    if(value > 0){
+const getRandomIndex = (value: number) => {
+    if (value > 0) {
         randomIndices.unshift(currentIndex);
         return randomIndices.pop() as number;
     }
 
     randomIndices.push(currentIndex);
     return randomIndices.shift() as number;
+};
 
-}
-
-const changeIndex = (index:number) => {
-
+const changeIndex = (index: number) => {
     let nextIndex = doShuffle ? getRandomIndex(index) : currentIndex + index;
 
-    if(nextIndex >= playlistFiles.length){
+    if (nextIndex >= playlistFiles.length) {
         nextIndex = 0;
     }
 
-    if(nextIndex < 0){
-        nextIndex = playlistFiles.length - 1
+    if (nextIndex < 0) {
+        nextIndex = playlistFiles.length - 1;
     }
 
     currentIndex = nextIndex;
 
     loadMediaFile();
-}
+};
 
-const selectFile = (index:number) => {
+const selectFile = (index: number) => {
     currentIndex = index;
-    changePlayStatus("playing")
+    changePlayStatus("playing");
     loadMediaFile();
-}
+};
 
-const onPlayerPlayStatusChange = (data:Mp.ChangePlayStatusRequest) => {
+const onPlayerPlayStatusChange = (data: Mp.ChangePlayStatusRequest) => {
+    changePlayStatus(data.status);
 
-    changePlayStatus(data.status)
+    Renderers.Player?.setThumbarButtons([]);
 
-    Renderers.Player?.setThumbarButtons([])
-
-    if(playStatus == "playing"){
-        Renderers.Player?.setThumbarButtons(thumButtons[1])
-    }else{
-        Renderers.Player?.setThumbarButtons(thumButtons[0])
+    if (playStatus == "playing") {
+        Renderers.Player?.setThumbarButtons(thumButtons[1]);
+    } else {
+        Renderers.Player?.setThumbarButtons(thumButtons[0]);
     }
-
-}
+};
 
 const togglePlay = () => {
-    respond("Player", "toggle-play", {})
-}
+    respond("Player", "toggle-play", {});
+};
 
-const dropFiles = (data:Mp.DropRequest) => {
-
-    if(data.renderer === "Playlist"){
-        addToPlaylist(data.files)
+const dropFiles = (data: Mp.DropRequest) => {
+    if (data.renderer === "Playlist") {
+        addToPlaylist(data.files);
     }
 
-    if(data.renderer === "Player"){
-        initPlaylist(data.files)
+    if (data.renderer === "Player") {
+        initPlaylist(data.files);
     }
+};
 
-}
-
-const changePlaylistItemOrder = (data:Mp.ChangePlaylistOrderRequet) => {
-
-    if(data.start === data.end) return;
+const changePlaylistItemOrder = (data: Mp.ChangePlaylistOrderRequet) => {
+    if (data.start === data.end) return;
 
     const currentId = getCurrentFile().id;
 
     const replacing = playlistFiles.splice(data.start, 1)[0];
-    playlistFiles.splice(data.end, 0, replacing)
+    playlistFiles.splice(data.end, 0, replacing);
 
-    currentIndex = playlistFiles.findIndex(file => file.id == currentId);
+    currentIndex = playlistFiles.findIndex((file) => file.id == currentId);
 
-    respond("Playlist", "playlist-change", {files:playlistFiles})
-
-}
+    respond("Playlist", "playlist-change", { files: playlistFiles });
+};
 
 const clearPlaylist = () => {
     reset();
-    changePlayStatus("stopped")
+    changePlayStatus("stopped");
     loadMediaFile();
-}
+};
 
-const removeFromPlaylist = (selectedIds:string[]) => {
+const removeFromPlaylist = (selectedIds: string[]) => {
+    if (!selectedIds.length) return;
 
-    if(!selectedIds.length) return;
-
-    const removeIndices = playlistFiles.filter(file => selectedIds.includes(file.id)).map(file => playlistFiles.indexOf(file))
+    const removeIndices = playlistFiles.filter((file) => selectedIds.includes(file.id)).map((file) => playlistFiles.indexOf(file));
     const isCurrentFileRemoved = removeIndices.includes(currentIndex);
 
-    const newFiles = playlistFiles.filter((_,index) => !removeIndices.includes(index));
+    const newFiles = playlistFiles.filter((_, index) => !removeIndices.includes(index));
     playlistFiles.length = 0;
-    playlistFiles.push(...newFiles)
+    playlistFiles.push(...newFiles);
 
-    respond("Playlist", "after-remove-playlist", {files:playlistFiles})
+    respond("Playlist", "after-remove-playlist", { files: playlistFiles });
 
-    currentIndex = getIndexAfterRemove(removeIndices)
+    currentIndex = getIndexAfterRemove(removeIndices);
 
-    if(isCurrentFileRemoved){
+    if (isCurrentFileRemoved) {
         loadMediaFile();
     }
+};
 
-}
+const getIndexAfterRemove = (removeIndices: number[]) => {
+    if (removeIndices.includes(currentIndex)) {
+        if (!playlistFiles.length) return -1;
 
-const getIndexAfterRemove = (removeIndices:number[]) => {
+        const nextIndex = removeIndices[0];
 
-    if(removeIndices.includes(currentIndex)){
-
-        if(!playlistFiles.length) return -1;
-
-        const nextIndex = removeIndices[0]
-
-        if(nextIndex >= playlistFiles.length){
-            return playlistFiles.length - 1
+        if (nextIndex >= playlistFiles.length) {
+            return playlistFiles.length - 1;
         }
 
         return nextIndex;
     }
 
-    if(removeIndices[0] < currentIndex){
-        return currentIndex - removeIndices.length
+    if (removeIndices[0] < currentIndex) {
+        return currentIndex - removeIndices.length;
     }
 
-    return currentIndex
+    return currentIndex;
+};
 
-}
-
-const releaseFile = async (fileIds:string[]) => {
-    respond("Player", "release-file", {fileIds})
+const releaseFile = async (fileIds: string[]) => {
+    respond("Player", "release-file", { fileIds });
     fileReleasePromise = new Deferred();
-    return await fileReleasePromise.promise
-}
+    return await fileReleasePromise.promise;
+};
 
-const deleteFile = async (selectedIds:string[]) => {
-
-    if(!selectedIds.length) return;
+const deleteFile = async (selectedIds: string[]) => {
+    if (!selectedIds.length) return;
 
     await releaseFile(selectedIds);
 
-    try{
+    try {
+        const targetFilePaths = playlistFiles.filter((file) => selectedIds.includes(file.id)).map((file) => file.fullPath);
 
-        const targetFilePaths = playlistFiles.filter(file => selectedIds.includes(file.id)).map(file => file.fullPath);
+        if (!targetFilePaths.length) return;
 
-        if(!targetFilePaths.length) return;
-
-        await Promise.all(targetFilePaths.map(async item => await shell.trashItem(item)))
+        await Promise.all(targetFilePaths.map(async (item) => await shell.trashItem(item)));
 
         removeFromPlaylist(selectedIds);
-
-    }catch(ex){
-        dialogs.showErrorMessage(ex)
+    } catch (ex) {
+        dialogs.showErrorMessage(ex);
     }
-}
+};
 
-const moveFile = async (selectedIds:string[]) => {
+const moveFile = async (selectedIds: string[]) => {
+    if (!Renderers.Playlist) return;
 
-    if(!Renderers.Playlist) return;
-
-    if(selectedIds.length != 1) return;
+    if (selectedIds.length != 1) return;
 
     try {
-        const files = playlistFiles.filter(file => file.id == selectedIds[0]);
+        const files = playlistFiles.filter((file) => file.id == selectedIds[0]);
 
-        if(!files.length) return;
+        if (!files.length) return;
 
         const file = files[0];
 
         const defaultPath = settings.data.defaultPath && fs.existsSync(settings.data.defaultPath) ? path.join(settings.data.defaultPath, file.name) : file.fullPath;
         const destPath = dialogs.showSaveDialog(Renderers.Playlist, defaultPath);
 
-        if(!destPath || file.fullPath == destPath) return;
+        if (!destPath || file.fullPath == destPath) return;
 
         await releaseFile(selectedIds);
         settings.data.defaultPath = destPath;
@@ -559,271 +525,259 @@ const moveFile = async (selectedIds:string[]) => {
         removeFromPlaylist(selectedIds);
 
         fs.renameSync(file.fullPath, destPath);
-
-    }catch(ex:any){
-        dialogs.showErrorMessage(ex)
+    } catch (ex: any) {
+        dialogs.showErrorMessage(ex);
     }
-
-}
+};
 
 const reveal = () => {
+    if (!playlistSelection.selectedId) return;
 
-    if(!playlistSelection.selectedId) return;
+    const file = playlistFiles.find((file) => file.id == playlistSelection.selectedId);
 
-    const file = playlistFiles.find(file => file.id == playlistSelection.selectedId)
+    if (!file) return;
 
-    if(!file) return;
+    shell.showItemInFolder(file.fullPath);
+};
 
-    shell.showItemInFolder(file.fullPath)
+const copyFileNameToClipboard = (fullPath: boolean) => {
+    if (!playlistSelection.selectedIds.length) return;
 
-}
+    const files = playlistFiles.filter((file) => playlistSelection.selectedIds.includes(file.id));
 
-const copyFileNameToClipboard = (fullPath:boolean) => {
+    if (!files) return;
 
-    if(!playlistSelection.selectedIds.length) return;
-
-    const files = playlistFiles.filter(file => playlistSelection.selectedIds.includes(file.id))
-
-    if(!files) return;
-
-    const names = files.map(file => fullPath ? file.fullPath : file.name);
+    const names = files.map((file) => (fullPath ? file.fullPath : file.name));
 
     clipboard.writeText(names.join("\n"));
-
-}
+};
 
 const pasteFilePath = () => {
     const paths = clipboard.readText();
-    const lineBreak = paths.includes("\r") ? "\r\n" : "\n"
-    if(paths){
-        const files = paths.split(lineBreak).filter(filePath => fs.existsSync(filePath));
-        if(files.length){
+    const lineBreak = paths.includes("\r") ? "\r\n" : "\n";
+    if (paths) {
+        const files = paths.split(lineBreak).filter((filePath) => fs.existsSync(filePath));
+        if (files.length) {
             addToPlaylist(files);
         }
     }
-}
+};
 
 const toggleGroupBy = () => {
-    settings.data.sort.groupBy = !settings.data.sort.groupBy
+    settings.data.sort.groupBy = !settings.data.sort.groupBy;
     sortPlayList();
-}
+};
 
-const changeSortOrder = (sortOrder:Mp.SortOrder) => {
+const changeSortOrder = (sortOrder: Mp.SortOrder) => {
     settings.data.sort.order = sortOrder;
     sortPlayList();
-}
+};
 
 const sortPlayList = () => {
-
-    respond("Playlist", "sort-type-change", settings.data.sort)
+    respond("Playlist", "sort-type-change", settings.data.sort);
 
     const currentFileId = getCurrentFile().id;
 
-    if(!playlistFiles.length) return;
+    if (!playlistFiles.length) return;
 
-    if(settings.data.sort.groupBy){
-        util.sortByGroup(playlistFiles, settings.data.sort.order)
-    }else{
-        util.sort(playlistFiles, settings.data.sort.order)
+    if (settings.data.sort.groupBy) {
+        util.sortByGroup(playlistFiles, settings.data.sort.order);
+    } else {
+        util.sort(playlistFiles, settings.data.sort.order);
     }
 
-    const sortedIds = playlistFiles.map(file => file.id);
+    const sortedIds = playlistFiles.map((file) => file.id);
 
-    if(currentFileId){
-        currentIndex = sortedIds.findIndex(id => id === currentFileId);
+    if (currentFileId) {
+        currentIndex = sortedIds.findIndex((id) => id === currentFileId);
     }
 
-    respond("Playlist", "playlist-change", {files:playlistFiles})
-
-}
+    respond("Playlist", "playlist-change", { files: playlistFiles });
+};
 
 const togglePlaylistWindow = () => {
-
     settings.data.playlistVisible = !settings.data.playlistVisible;
-    if(settings.data.playlistVisible){
+    if (settings.data.playlistVisible) {
         Renderers.Playlist?.show();
-    }else{
+    } else {
         Renderers.Playlist?.hide();
     }
+};
 
-}
-
-const openConvert = (opener:Mp.DialogOpener) => {
-    const file = playlistFiles.find(file => file.id == playlistSelection.selectedId) ?? EmptyFile
-    respond("Convert", "open-convert", {file, opener})
+const openConvert = (opener: Mp.DialogOpener) => {
+    const file = playlistFiles.find((file) => file.id == playlistSelection.selectedId) ?? EmptyFile;
+    respond("Convert", "open-convert", { file, opener });
     Renderers.Convert?.show();
-}
+};
 
-const openConvertSourceFileDialog = (e:Mp.OpenFileDialogRequest) => {
+const openConvertSourceFileDialog = (e: Mp.OpenFileDialogRequest) => {
+    if (!Renderers.Convert) return;
 
-    if(!Renderers.Convert) return;
+    const selectedFiles = dialogs.openConvertSourceFileDialog(Renderers.Convert, e.fullPath);
 
-    const selectedFiles = dialogs.openConvertSourceFileDialog(Renderers.Convert, e.fullPath)
+    if (!selectedFiles) return;
 
-    if(!selectedFiles) return;
+    const file = selectedFiles ? util.toFile(selectedFiles[0]) : EmptyFile;
 
-    const file = selectedFiles ? util.toFile(selectedFiles[0]) : EmptyFile
-
-    respond("Convert", "after-sourcefile-select", {file})
-
-}
+    respond("Convert", "after-sourcefile-select", { file });
+};
 
 const changeSizeMode = () => {
-    settings.data.video.fitToWindow = !settings.data.video.fitToWindow
-    respond("Player", "change-display-mode", {settings:settings.data})
-}
+    settings.data.video.fitToWindow = !settings.data.video.fitToWindow;
+    respond("Player", "change-display-mode", { settings: settings.data });
+};
 
-const changeTheme = (theme:Mp.Theme) => {
-    nativeTheme.themeSource = theme
+const changeTheme = (theme: Mp.Theme) => {
+    nativeTheme.themeSource = theme;
     settings.data.theme = theme;
-}
+    Object.entries(Menus).forEach(([_, menu]) => {
+        menu.setTheme(theme);
+    });
+};
 
-const changePlaybackSpeed = (playbackSpeed:number) => {
-    settings.data.video.playbackSpeed = playbackSpeed
-    respond("Player", "change-playback-speed", {playbackSpeed})
-}
+const changePlaybackSpeed = (playbackSpeed: number) => {
+    settings.data.video.playbackSpeed = playbackSpeed;
+    respond("Player", "change-playback-speed", { playbackSpeed });
+};
 
-const changeSeekSpeed = (seekSpeed:number) => {
+const changeSeekSpeed = (seekSpeed: number) => {
     settings.data.video.seekSpeed = seekSpeed;
-    respond("Player", "change-seek-speed", {seekSpeed});
-}
+    respond("Player", "change-seek-speed", { seekSpeed });
+};
 
-const onMediaStateChange = (data:Mp.MediaState) => {
+const onMediaStateChange = (data: Mp.MediaState) => {
     settings.data.audio.volume = data.videoVolume;
     settings.data.audio.ampLevel = data.ampLevel;
     settings.data.audio.mute = data.mute;
-}
+};
 
-const changeProgressBar = (data:Mp.ProgressEvent) => Renderers.Player?.setProgressBar(data.progress);
+const changeProgressBar = (data: Mp.ProgressEvent) => Renderers.Player?.setProgressBar(data.progress);
 
-const openPlayerContextMenu = () => playerMenu.popup({window:Renderers.Player ?? undefined});
+const openPlayerContextMenu = async (e: Mp.Position) => {
+    await Menus.Player.popup(e.x, e.y);
+};
 
-const openSortContextMenu = (e:Mp.Position) => sortContext.popup({window:Renderers.Playlist ?? undefined, x:e.x, y:e.y - 110})
+const onOpenPlaylistContext = async (e: Mp.Position) => {
+    await Menus.Playlist.popup(e.x, e.y);
+};
+
+const openSortContextMenu = async (e: Mp.Position) => {
+    await Menus.Sort.popup(e.x, e.y - 110);
+};
 
 const hideConvertDialog = () => Renderers.Convert?.hide();
 
-const saveCapture = async (data:Mp.CaptureEvent) => {
-
+const saveCapture = async (data: Mp.CaptureEvent) => {
     const file = getCurrentFile();
 
-    if(!file.id || PlayableAudioExtentions.includes(file.extension)) return;
+    if (!file.id || PlayableAudioExtentions.includes(file.extension)) return;
 
-    if(!Renderers.Player) return;
+    if (!Renderers.Player) return;
 
-    const savePath = dialogs.saveImageDialog(Renderers.Player, file, data.timestamp)
+    const savePath = dialogs.saveImageDialog(Renderers.Player, file, data.timestamp);
 
-    if(!savePath) return;
+    if (!savePath) return;
 
     settings.data.defaultPath = path.dirname(savePath);
 
-    fs.writeFileSync(savePath, data.data, "base64")
-}
+    fs.writeFileSync(savePath, data.data, "base64");
+};
 
-const startConvert = async (data:Mp.ConvertRequest) => {
+const startConvert = async (data: Mp.ConvertRequest) => {
+    if (!Renderers.Convert) return endConvert();
 
-    if(!Renderers.Convert) return endConvert();
-
-    if(!data.sourcePath) return endConvert();
+    if (!data.sourcePath) return endConvert();
 
     const file = util.toFile(data.sourcePath);
 
-    if(!util.exists(file.fullPath)) return endConvert();
+    if (!util.exists(file.fullPath)) return endConvert();
 
     const extension = data.convertFormat.toLocaleLowerCase();
-    const fileName =  file.name.replace(path.extname(file.name), "")
+    const fileName = file.name.replace(path.extname(file.name), "");
 
-    const selectedPath = dialogs.saveMediaDialog(Renderers.Convert, fileName, extension, data.convertFormat)
+    const selectedPath = dialogs.saveMediaDialog(Renderers.Convert, fileName, extension, data.convertFormat);
 
-    if(!selectedPath) return endConvert()
+    if (!selectedPath) return endConvert();
 
-    settings.data.defaultPath = path.dirname(selectedPath)
+    settings.data.defaultPath = path.dirname(selectedPath);
 
-    const shouldReplace = getCurrentFile().fullPath === selectedPath
+    const shouldReplace = getCurrentFile().fullPath === selectedPath;
 
     const timestamp = String(new Date().getTime());
-    const savePath = shouldReplace ? path.join(path.dirname(selectedPath), path.basename(selectedPath) + timestamp) : selectedPath
+    const savePath = shouldReplace ? path.join(path.dirname(selectedPath), path.basename(selectedPath) + timestamp) : selectedPath;
 
-    Renderers.Convert.hide()
+    Renderers.Convert.hide();
 
-    respond("Player", "toggle-convert", {})
+    respond("Player", "toggle-convert", {});
 
-    try{
-
-        if(data.convertFormat === "MP4"){
-            await util.convertVideo(data.sourcePath, savePath, data.options)
-        }else{
-            await util.convertAudio(data.sourcePath, savePath, data.options)
+    try {
+        if (data.convertFormat === "MP4") {
+            await util.convertVideo(data.sourcePath, savePath, data.options);
+        } else {
+            await util.convertAudio(data.sourcePath, savePath, data.options);
         }
 
-        if(shouldReplace){
-            fs.renameSync(savePath, selectedPath)
+        if (shouldReplace) {
+            fs.renameSync(savePath, selectedPath);
         }
 
         endConvert();
-
-    }catch(ex:any){
-
-        endConvert(ex.message)
-
-    }finally{
-
+    } catch (ex: any) {
+        endConvert(ex.message);
+    } finally {
         openConvert("system");
-        respond("Player", "toggle-convert", {})
-
+        respond("Player", "toggle-convert", {});
     }
+};
 
-}
-
-const endConvert = (message?:string) => {
-    if(message){
-        dialogs.showErrorMessage(message)
+const endConvert = (message?: string) => {
+    if (message) {
+        dialogs.showErrorMessage(message);
     }
-    respond("Convert", "after-convert", {})
-}
+    respond("Convert", "after-convert", {});
+};
 
 const displayMetadata = async () => {
+    const file = playlistFiles.find((file) => file.id == playlistSelection.selectedId);
+    if (!file || !Renderers.Player) return;
 
-    const file = playlistFiles.find(file => file.id == playlistSelection.selectedId)
-    if(!file || !Renderers.Player) return;
-
-    const metadata = await util.getMediaMetadata(file.fullPath, true)
-    const metadataString = JSON.stringify(metadata, undefined, 2).replaceAll('"',"");
-    const result = await dialogs.metadataDialog(Renderers.Player, metadataString)
-    if(result.response === 0){
+    const metadata = await util.getMediaMetadata(file.fullPath, true);
+    const metadataString = JSON.stringify(metadata, undefined, 2).replaceAll('"', "");
+    const result = await dialogs.metadataDialog(Renderers.Player, metadataString);
+    if (result.response === 0) {
         clipboard.writeText(metadataString);
     }
-}
+};
 
 const openTagEditor = () => {
-    respond("Tag", "open-tag-editor", {tags:settings.data.tags})
+    respond("Tag", "open-tag-editor", { tags: settings.data.tags });
     Renderers.Tag?.show();
-}
+};
 
-const saveTags = (e:Mp.SaveTagsEvent) => {
+const saveTags = (e: Mp.SaveTagsEvent) => {
     settings.data.tags = e.tags;
-    helper.refreshTagContextMenu(playlistMenu, e.tags, playlistContextMenuCallback)
-}
+    helper.refreshTagContextMenu(Menus.Playlist, e.tags, playlistContextMenuCallback);
+};
 
 const closeTagEditor = () => Renderers.Tag?.hide();
 
-const addTagToFile = async (tagName:string) => {
+const addTagToFile = async (tagName: string) => {
+    const fileIndex = playlistFiles.findIndex((file) => file.id == playlistSelection.selectedId);
 
-    const fileIndex = playlistFiles.findIndex(file => file.id == playlistSelection.selectedId)
+    if (fileIndex < 0) return;
 
-    if(fileIndex < 0) return;
+    const currentTime = await releaseFile([playlistFiles[fileIndex].id]);
 
-    const currentTime = await releaseFile([playlistFiles[fileIndex].id])
-
-    try{
+    try {
         const file = playlistFiles[fileIndex];
         const tag = `[${tagName}]-`;
 
         const matchedTag = file.name.match(/^\[.*\]-/);
         let fileName = file.name;
-        if(matchedTag){
+        if (matchedTag) {
             fileName = matchedTag[0] == tag ? fileName.slice(matchedTag[0].length) : `${tag}${fileName.slice(matchedTag[0].length)}`;
-        }else{
-            fileName = `${tag}${fileName}`
+        } else {
+            fileName = `${tag}${fileName}`;
         }
 
         const newPath = path.join(file.dir, fileName);
@@ -831,156 +785,141 @@ const addTagToFile = async (tagName:string) => {
         fs.renameSync(file.fullPath, newPath);
 
         const newMediaFile = util.updateFile(newPath, file);
-        playlistFiles[fileIndex] = newMediaFile
+        playlistFiles[fileIndex] = newMediaFile;
 
-        respond("Playlist", "playlist-change", {files:playlistFiles})
-
-    }catch(ex:any){
-        dialogs.showErrorMessage(ex)
-    }finally{
-        if(fileIndex == currentIndex){
-            loadMediaFile(currentTime)
+        respond("Playlist", "playlist-change", { files: playlistFiles });
+    } catch (ex: any) {
+        dialogs.showErrorMessage(ex);
+    } finally {
+        if (fileIndex == currentIndex) {
+            loadMediaFile(currentTime);
         }
     }
+};
 
-}
-
-const renameFile = async (e:Mp.RenameRequest) => {
-
+const renameFile = async (e: Mp.RenameRequest) => {
     const currentTime = await releaseFile([e.data.id]);
 
-    const fileIndex = playlistFiles.findIndex(file => file.id == e.data.id)
+    const fileIndex = playlistFiles.findIndex((file) => file.id == e.data.id);
     const file = playlistFiles[fileIndex];
     const filePath = file.fullPath;
-    const newPath = path.join(path.dirname(filePath), e.data.name)
+    const newPath = path.join(path.dirname(filePath), e.data.name);
 
-    try{
-
-        if(util.exists(newPath)){
-            throw new Error(`File name "${e.data.name}" exists`)
+    try {
+        if (util.exists(newPath)) {
+            throw new Error(`File name "${e.data.name}" exists`);
         }
 
-        fs.renameSync(filePath, newPath)
+        fs.renameSync(filePath, newPath);
 
         const newMediaFile = util.updateFile(newPath, file);
-        playlistFiles[fileIndex] = newMediaFile
+        playlistFiles[fileIndex] = newMediaFile;
 
-        respond("Playlist", "after-rename", {file:newMediaFile})
-
-    }catch(ex){
-        await dialogs.showErrorMessage(ex)
-        respond("Playlist", "after-rename", {file:file, error:true})
-    }finally{
-        if(fileIndex == currentIndex){
-            loadMediaFile(currentTime)
+        respond("Playlist", "after-rename", { file: newMediaFile });
+    } catch (ex) {
+        await dialogs.showErrorMessage(ex);
+        respond("Playlist", "after-rename", { file: file, error: true });
+    } finally {
+        if (fileIndex == currentIndex) {
+            loadMediaFile(currentTime);
         }
     }
-}
+};
 
 const onMinimize = () => Renderers.Player?.minimize();
 
-const onLoadRequest = (data:Mp.LoadFileRequest) => {
-    if(data.isAbsolute){
-        selectFile(data.index)
-    }else{
-        changeIndex(data.index)
+const onLoadRequest = (data: Mp.LoadFileRequest) => {
+    if (data.isAbsolute) {
+        selectFile(data.index);
+    } else {
+        changeIndex(data.index);
     }
-}
+};
 
 const onReload = () => {
     Renderers.Playlist?.reload();
     Renderers.Player?.reload();
-}
+};
 
 const onClosePlaylist = () => {
     settings.data.playlistVisible = false;
-    Renderers.Playlist?.hide()
-}
+    Renderers.Playlist?.hide();
+};
 
-const onPlaylistItemSelectionChange = (data:Mp.PlaylistItemSelectionChange) => {
+const onPlaylistItemSelectionChange = (data: Mp.PlaylistItemSelectionChange) => {
     playlistSelection.selectedId = data.selection.selectedId;
-    playlistSelection.selectedIds = data.selection.selectedIds
-}
-
-const onOpenPlaylistContext = () => {
-    playlistMenu.popup({window:Renderers.Playlist ?? undefined})
-}
+    playlistSelection.selectedIds = data.selection.selectedIds;
+};
 
 const onToggleShuffle = () => {
     doShuffle = !doShuffle;
     shuffleList();
-}
+};
 
-const onToggleFullscreen = (e:Mp.FullscreenChange) => {
-
-    if(e.fullscreen){
-        Renderers.Player?.setFullScreen(true)
+const onToggleFullscreen = (e: Mp.FullscreenChange) => {
+    if (e.fullscreen) {
+        Renderers.Player?.setFullScreen(true);
         Renderers.Playlist?.hide();
         Renderers.Convert?.hide();
-    }else{
-        Renderers.Player?.setFullScreen(false)
-        if(settings.data.playlistVisible) Renderers.Playlist?.show();
+    } else {
+        Renderers.Player?.setFullScreen(false);
+        if (settings.data.playlistVisible) Renderers.Playlist?.show();
         Renderers.Player?.focus();
     }
-}
+};
 
-const onShortcut = (e:Mp.ShortcutEvent) => {
-    if(e.renderer === "Player"){
-        playerContextMenuCallback(e.menu as keyof Mp.PlayerContextMenuSubTypeMap)
+const onShortcut = (e: Mp.ShortcutEvent) => {
+    if (e.renderer === "Player") {
+        playerContextMenuCallback(e.menu as keyof Mp.PlayerContextMenuSubTypeMap);
     }
 
-    if(e.renderer === "Playlist"){
-        playlistContextMenuCallback(e.menu as keyof Mp.PlaylistContextMenuSubTypeMap)
+    if (e.renderer === "Playlist") {
+        playlistContextMenuCallback(e.menu as keyof Mp.PlaylistContextMenuSubTypeMap);
     }
-}
+};
 
-const onReleaseFile = (data:Mp.ReleaseFileResult) => {
+const onReleaseFile = (data: Mp.ReleaseFileResult) => {
     fileReleasePromise.resolve(data.currentTime);
-}
+};
 
 const openConfigFileJson = async () => {
     await shell.openPath(settings.getFilePath());
-}
+};
 
 const registerIpcChannels = () => {
+    const addEventHandler = <K extends keyof MainChannelEventMap>(channel: K, handler: (data: MainChannelEventMap[K]) => void | Promise<void>) => {
+        ipcMain.on(channel, (_event, request) => handler(request));
+    };
 
-    const addEventHandler = <K extends keyof MainChannelEventMap>(
-        channel:K,
-        handler: (data: MainChannelEventMap[K]) => void | Promise<void>
-    ) => {
-        ipcMain.on(channel, (_event, request) => handler(request))
-    }
-
-    addEventHandler("minimize", onMinimize)
-    addEventHandler("toggle-maximize", toggleMaximize)
-    addEventHandler("close", closeWindow)
-    addEventHandler("drop", dropFiles)
-    addEventHandler("load-file", onLoadRequest)
-    addEventHandler("progress", changeProgressBar)
-    addEventHandler("media-state-change", onMediaStateChange)
-    addEventHandler("open-player-context", openPlayerContextMenu)
-    addEventHandler("play-status-change", onPlayerPlayStatusChange)
-    addEventHandler("reload", onReload)
-    addEventHandler("save-capture", saveCapture)
-    addEventHandler("close-playlist", onClosePlaylist)
-    addEventHandler("playlist-item-selection-change", onPlaylistItemSelectionChange)
-    addEventHandler("open-sort-context", openSortContextMenu)
-    addEventHandler("trash-ready", deleteFile)
+    addEventHandler("minimize", onMinimize);
+    addEventHandler("toggle-maximize", toggleMaximize);
+    addEventHandler("close", closeWindow);
+    addEventHandler("drop", dropFiles);
+    addEventHandler("load-file", onLoadRequest);
+    addEventHandler("progress", changeProgressBar);
+    addEventHandler("media-state-change", onMediaStateChange);
+    addEventHandler("open-player-context", openPlayerContextMenu);
+    addEventHandler("play-status-change", onPlayerPlayStatusChange);
+    addEventHandler("reload", onReload);
+    addEventHandler("save-capture", saveCapture);
+    addEventHandler("close-playlist", onClosePlaylist);
+    addEventHandler("playlist-item-selection-change", onPlaylistItemSelectionChange);
+    addEventHandler("open-sort-context", openSortContextMenu);
+    addEventHandler("trash-ready", deleteFile);
     addEventHandler("rename-file", renameFile);
     addEventHandler("file-released", onReleaseFile);
-    addEventHandler("open-playlist-context", onOpenPlaylistContext)
-    addEventHandler("change-playlist-order", changePlaylistItemOrder)
-    addEventHandler("toggle-play", togglePlay)
-    addEventHandler("toggle-shuffle", onToggleShuffle)
-    addEventHandler("toggle-fullscreen", onToggleFullscreen)
-    addEventHandler("close-convert", hideConvertDialog)
-    addEventHandler("request-convert", startConvert)
-    addEventHandler("request-cancel-convert", util.cancelConvert)
-    addEventHandler("open-convert-sourcefile-dialog", openConvertSourceFileDialog)
-    addEventHandler("shortcut", onShortcut)
-    addEventHandler("save-tags", saveTags)
-    addEventHandler("close-tag", closeTagEditor)
-    addEventHandler("open-config-file", openConfigFileJson)
-    addEventHandler("error", (e:Mp.ErrorEvent) => dialogs.showErrorMessage(e.message))
-
-}
+    addEventHandler("open-playlist-context", onOpenPlaylistContext);
+    addEventHandler("change-playlist-order", changePlaylistItemOrder);
+    addEventHandler("toggle-play", togglePlay);
+    addEventHandler("toggle-shuffle", onToggleShuffle);
+    addEventHandler("toggle-fullscreen", onToggleFullscreen);
+    addEventHandler("close-convert", hideConvertDialog);
+    addEventHandler("request-convert", startConvert);
+    addEventHandler("request-cancel-convert", util.cancelConvert);
+    addEventHandler("open-convert-sourcefile-dialog", openConvertSourceFileDialog);
+    addEventHandler("shortcut", onShortcut);
+    addEventHandler("save-tags", saveTags);
+    addEventHandler("close-tag", closeTagEditor);
+    addEventHandler("open-config-file", openConfigFileJson);
+    addEventHandler("error", (e: Mp.ErrorEvent) => dialogs.showErrorMessage(e.message));
+};

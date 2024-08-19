@@ -131,6 +131,11 @@
 
     const onLoadError = () => {
 
+        if(video.error && video.error.code == video.error.MEDIA_ERR_DECODE){
+            onMediaLoaded()
+            return;
+        }
+
         let loaded = $appState.loaded;
 
         dispatch({type:"loaded", value:false})
@@ -489,7 +494,7 @@
     const onContextMenu = (e:MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
-        window.api.send("open-player-context", {})
+        window.api.send("open-player-context", {x:e.screenX, y:e.screenY})
     }
 
     onMount(() => {
