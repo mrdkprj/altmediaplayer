@@ -16,8 +16,7 @@
     position: relative;
 }
 
-.rename{
-    position: fixed;
+.input{
     background-color: var(--input-bgcolor);
     outline: 1px solid var(--input-focus-outline);
     border: 0;
@@ -28,7 +27,19 @@
     z-index: 900;
 }
 
-.rename:focus{
+.rename{
+    position: fixed;
+}
+
+.search{
+    position: fixed;
+    top:30px;
+    left:2px;
+    border-radius: 4px;
+}
+
+.rename:focus
+.search:focus{
     outline: 1px solid var(--input-focus-outline);
 }
 

@@ -29,6 +29,7 @@ type AppState = {
     preventBlur: boolean;
     rename: RenameState;
     dragState: DragState;
+    searching: boolean;
 };
 
 export const initialAppState: AppState = {
@@ -54,6 +55,7 @@ export const initialAppState: AppState = {
         startId: "",
         targetId: "",
     },
+    searching: false,
 };
 
 type AppAction =
@@ -75,7 +77,8 @@ type AppAction =
     | { type: "udpateName"; value: string }
     | { type: "startDrag"; value: { startId: string; dir: string } }
     | { type: "drag"; value: string }
-    | { type: "endDrag" };
+    | { type: "endDrag" }
+    | { type: "toggleSearch"; value: boolean };
 
 const updater = (state: AppState, action: AppAction) => {
     switch (action.type) {
@@ -145,6 +148,9 @@ const updater = (state: AppState, action: AppAction) => {
 
         case "toggleShuffle":
             return { ...state, shuffle: !state.shuffle };
+
+        case "toggleSearch":
+            return { ...state, searching: action.value };
 
         default:
             return state;

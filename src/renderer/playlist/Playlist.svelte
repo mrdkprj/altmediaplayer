@@ -352,6 +352,17 @@
 
     }
 
+    // const onEscape = () => {
+
+    // }
+
+    // const toggleSearch = () => {
+    //     const showSearchBar = !$appState.searching;
+    //     if(showSearchBar && $appState.rename.renaming){
+    //         endEditFileName();
+    //     }
+    // }
+
     const toggleShuffle = () => {
         dispatch({type:"toggleShuffle"})
         window.api.send("toggle-shuffle", {})
@@ -403,6 +414,11 @@
             return moveSelectionUpto(e);
         }
 
+        if(e.ctrlKey && e.key === "f"){
+            dispatch({type:"toggleSearch", value:!$appState.searching});
+            return;
+        }
+
         return handleShortcut("Playlist", e);
 
     }
@@ -445,7 +461,7 @@
         {#if $appState.rename.renaming}
             <input
                 type="text"
-                class="rename"
+                class="input rename"
                 style="top:{$appState.rename.rect.top}px; left:{$appState.rename.rect.left}px; width:{$appState.rename.rect.width}px; height:{$appState.rename.rect.height}px"
                 spellCheck="false"
                 on:blur={$appState.preventBlur ? undefined : endEditFileName}
@@ -453,6 +469,9 @@
                 bind:value={$appState.rename.inputValue}
                 use:setInputFocus
             />
+        {/if}
+        {#if $appState.searching}
+            <input class="input search"/>
         {/if}
         <List onMouseDown={onPlaylistItemMousedown} scrollToElement={scrollToElement} getChildIndex={getChildIndex}/>
     </div>

@@ -1,6 +1,6 @@
 {
-  "name": "altmediaplayer",
-  "productName": "AltMediaPlayer",
+  "name": "altmediaplayer2",
+  "productName": "AltMediaPlayer2",
   "version": "1.1.2",
   "description": "MediaPlayer",
   "main": "out/main/index.js",
@@ -33,7 +33,7 @@
     "@typescript-eslint/parser": "^6.15.0",
     "electron": "^31.0.0",
     "electron-builder": "^23.6.0",
-    "electron-vite": "^2.0.0",
+    "electron-vite": "^2.3.0",
     "eslint": "^8.56.0",
     "eslint-plugin-svelte": "^2.35.1",
     "svelte": "^4.2.8",

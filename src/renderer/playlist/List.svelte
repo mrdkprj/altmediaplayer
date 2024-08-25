@@ -75,7 +75,7 @@
         {/if}
 
         <div
-            title={file.name}
+            title={file.fullPath}
             id={file.id}
             draggable="true"
             class="playlist-item"

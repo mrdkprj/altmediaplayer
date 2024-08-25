@@ -1,14 +1,14 @@
+import { Helper } from "./helper";
 import { app, ipcMain, clipboard, shell, protocol, nativeTheme } from "electron";
 import fs from "fs";
 import path from "path";
 import url from "url";
-import Helper from "./helper";
+
 import util from "./util";
 import Settings from "./settings";
 import Dialogs from "./dialogs";
 import Deferred from "./deferred";
 import { EmptyFile, FORWARD, BACKWARD, PlayableAudioExtentions } from "../constants";
-import { Menu } from "node_wcpopup";
 
 const locked = app.requestSingleInstanceLock(process.argv);
 
@@ -27,12 +27,6 @@ const Renderers: Renderer = {
     Playlist: null,
     Convert: null,
     Tag: null,
-};
-
-const Menus: { [key in Mp.ContextMenuName]: Menu } = {
-    Player: new Menu(),
-    Playlist: new Menu(),
-    Sort: new Menu(),
 };
 
 const playlistFiles: Mp.MediaFile[] = [];
@@ -208,9 +202,9 @@ app.on("ready", () => {
     Renderers.Convert = helper.createConvertWindow(Renderers.Player);
     Renderers.Tag = helper.createTagEditorWindow(Renderers.Player);
 
-    Menus.Player = helper.createPlayerContextMenu(Renderers.Player, playerContextMenuCallback);
-    Menus.Playlist = helper.createPlaylistContextMenu(Renderers.Playlist, playlistContextMenuCallback);
-    Menus.Sort = helper.createPlaylistSortContextMenu(Renderers.Playlist, playlistContextMenuCallback);
+    helper.createPlayerContextMenu("Player", Renderers.Player, playerContextMenuCallback);
+    helper.createPlaylistContextMenu("Playlist", Renderers.Playlist, playlistContextMenuCallback);
+    helper.createPlaylistSortContextMenu("Sort", Renderers.Playlist, playlistContextMenuCallback);
 
     Renderers.Player.on("ready-to-show", () => {
         if (settings.data.isMaximized) {
@@ -630,9 +624,7 @@ const changeSizeMode = () => {
 const changeTheme = (theme: Mp.Theme) => {
     nativeTheme.themeSource = theme;
     settings.data.theme = theme;
-    Object.entries(Menus).forEach(([_, menu]) => {
-        menu.setTheme(theme);
-    });
+    helper.changeTheme(theme);
 };
 
 const changePlaybackSpeed = (playbackSpeed: number) => {
@@ -654,15 +646,15 @@ const onMediaStateChange = (data: Mp.MediaState) => {
 const changeProgressBar = (data: Mp.ProgressEvent) => Renderers.Player?.setProgressBar(data.progress);
 
 const openPlayerContextMenu = async (e: Mp.Position) => {
-    await Menus.Player.popup(e.x, e.y);
+    await helper.popup("Player", e.x, e.y);
 };
 
 const onOpenPlaylistContext = async (e: Mp.Position) => {
-    await Menus.Playlist.popup(e.x, e.y);
+    await helper.popup("Playlist", e.x, e.y);
 };
 
 const openSortContextMenu = async (e: Mp.Position) => {
-    await Menus.Sort.popup(e.x, e.y - 110);
+    await helper.popup("Sort", e.x, e.y - 110);
 };
 
 const hideConvertDialog = () => Renderers.Convert?.hide();
@@ -756,7 +748,7 @@ const openTagEditor = () => {
 
 const saveTags = (e: Mp.SaveTagsEvent) => {
     settings.data.tags = e.tags;
-    helper.refreshTagContextMenu(Menus.Playlist, e.tags, playlistContextMenuCallback);
+    helper.refreshTagContextMenu(e.tags, playlistContextMenuCallback);
 };
 
 const closeTagEditor = () => Renderers.Tag?.hide();
