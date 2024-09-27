@@ -10,10 +10,18 @@ import { getDefaultConfig, Menu, MenuItem, MenuItemConstructorOptions } from "no
 const getHWND = (window: BrowserWindow) => {
     const hwndBuffer = window.getNativeWindowHandle();
     let hwnd;
-    if (os.endianness() == "LE") {
-        hwnd = hwndBuffer.readInt32LE();
+    if (os.platform() == "linux") {
+        if (os.endianness() == "LE") {
+            hwnd = hwndBuffer.readUInt32LE();
+        } else {
+            hwnd = hwndBuffer.readUInt32BE();
+        }
     } else {
-        hwnd = hwndBuffer.readInt32BE();
+        if (os.endianness() == "LE") {
+            hwnd = hwndBuffer.readInt32LE();
+        } else {
+            hwnd = hwndBuffer.readInt32BE();
+        }
     }
 
     return hwnd;

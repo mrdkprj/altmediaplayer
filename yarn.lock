@@ -2545,8 +2545,8 @@ node-releases@^2.0.18:
   integrity sha512-d9VeXT4SJ7ZeOqGX6R5EM022wpL+eWPooLI+5UpWn2jCT1aosUQEhQP214x33Wkwx3JQMvIm+tIoVOdodFS40g==
 
 "node_wcpopup@git+https://github.com/mrdkprj/node_wcpopup.git":
-  version "0.0.10"
-  resolved "git+https://github.com/mrdkprj/node_wcpopup.git#bb654d7908deb3b55c8b9e191dc8c74d2239d7bd"
+  version "0.1.0"
+  resolved "git+https://github.com/mrdkprj/node_wcpopup.git#3db5b5f9dcc74c8543adaea50a60db87d2e0ef8e"
 
 normalize-path@^3.0.0, normalize-path@~3.0.0:
   version "3.0.0"

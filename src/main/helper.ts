@@ -8,7 +8,7 @@ import pause from "../assets/pause.png";
 import forward from "../assets/forward.png";
 import backward from "../assets/backward.png";
 import { Menu } from "node_wcpopup";
-import { Builder } from "./win_helper";
+import { Builder } from "./menuBuilder";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -24,7 +24,7 @@ class Helper {
     private settings: Mp.Settings;
     private t: (key: keyof Mp.Labels) => string;
     private menuBuilder: Mp.MenuBuilder<any>;
-    private menus: { [key in Mp.ContextMenuName]: Menu | Electron.Menu };
+    private menus: { [key in Mp.ContextMenuName]: Menu };
 
     constructor(settings: Mp.Settings) {
         this.settings = settings;
