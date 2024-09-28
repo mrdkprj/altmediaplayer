@@ -1,23 +1,29 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import crypto from "crypto";
 import ffmpeg from "fluent-ffmpeg";
-import win32props from "win32props";
 import { Resolutions, Rotations } from "../constants";
+
+const FFMPEG = os.platform() == "linux" ? "ffmpeg" : "ffmpeg.exe";
+const FFPROBE = os.platform() == "linux" ? "ffprobe" : "ffprobe.exe";
 
 class Util {
     private convertDestFile: string | null;
     private command: ffmpeg.FfmpegCommand | null;
     private isDev: boolean;
+    private resourcePath: string;
 
     constructor() {
         this.convertDestFile = null;
         this.command = null;
         this.isDev = process.env.NODE_ENV === "development";
-        const resourcePath = this.isDev ? path.join(__dirname, "..", "..", "resources") : path.join(process.resourcesPath, "resources");
+        this.resourcePath = this.isDev ? path.join(__dirname, "..", "..", "resources") : path.join(process.resourcesPath, "resources");
 
-        const ffmpegPath = path.join(resourcePath, "ffmpeg.exe");
+        const ffmpegPath = path.join(this.resourcePath, FFMPEG);
         ffmpeg.setFfmpegPath(ffmpegPath);
+        const ffprobePath = path.join(this.resourcePath, FFPROBE);
+        ffmpeg.setFfprobePath(ffprobePath);
     }
 
     extractFilesFromArgv(target?: string[]) {
@@ -135,10 +141,20 @@ class Util {
         fs.renameSync(file.fullPath, newName);
     }
 
-    async getMediaMetadata(fullPath: string, format = false): Promise<Mp.Metadata> {
-        const metadata = (await win32props.read(fullPath, format)) as Mp.Metadata;
-        metadata.Volume = await this.getVolume(fullPath);
-        return metadata;
+    async getMediaMetadata(fullPath: string): Promise<Mp.Metadata> {
+        return new Promise((resolve, reject) => {
+            ffmpeg.ffprobe(fullPath, async (error: any, FfprobeData: ffmpeg.FfprobeData) => {
+                if (error) {
+                    reject(new Error("Read media metadata failed"));
+                }
+                const metadata = FfprobeData as Mp.Metadata;
+                metadata.Volume = await this.getVolume(fullPath);
+                resolve(metadata);
+            });
+        });
+        // const metadata = (await win32props.read(fullPath, format)) as Mp.Metadata;
+        // metadata.Volume = await this.getVolume(fullPath);
+        // return metadata;
     }
 
     async getVolume(sourcePath: string): Promise<Mp.MediaVolume> {
@@ -184,11 +200,11 @@ class Util {
 
         const metadata = await this.getMediaMetadata(sourcePath);
 
-        if (!metadata.AudioEncodingBitrate) {
-            metadata.AudioEncodingBitrate = "0";
+        if (!metadata.streams[1].bit_rate) {
+            metadata.streams[1].bit_rate = "0";
         }
 
-        const audioBitrate = options.audioBitrate !== "BitrateNone" ? parseInt(options.audioBitrate) : Math.ceil(parseInt(metadata.AudioEncodingBitrate) / 1000);
+        const audioBitrate = options.audioBitrate !== "BitrateNone" ? parseInt(options.audioBitrate) : Math.ceil(parseInt(metadata.streams[1].bit_rate) / 1000);
         let audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : "";
 
         if (options.maxAudioVolume) {
@@ -236,11 +252,11 @@ class Util {
         const size = Resolutions[options.frameSize] ? Resolutions[options.frameSize] : await this.getSize(metadata);
         const rotation = Rotations[options.rotation] ? `transpose=${Rotations[options.rotation]}` : "";
 
-        if (!metadata.AudioEncodingBitrate) {
-            metadata.AudioEncodingBitrate = "0";
+        if (!metadata.streams[1].bit_rate) {
+            metadata.streams[1].bit_rate = "0";
         }
 
-        const audioBitrate = options.audioBitrate !== "BitrateNone" ? parseInt(options.audioBitrate) : Math.ceil(parseInt(metadata.AudioEncodingBitrate) / 1000);
+        const audioBitrate = options.audioBitrate !== "BitrateNone" ? parseInt(options.audioBitrate) : Math.ceil(parseInt(metadata.streams[1].bit_rate) / 1000);
         let audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : "";
 
         if (options.maxAudioVolume) {
@@ -282,14 +298,14 @@ class Util {
         });
     }
 
-    private async getSize(metadata: win32props.Property) {
-        const rotation = metadata.VideoOrientation;
+    private async getSize(metadata: Mp.Metadata) {
+        const rotation = metadata.streams[0].rotation;
 
         if (rotation === "-90" || rotation === "90") {
-            return `${metadata.VideoFrameHeight}x${metadata.VideoFrameWidth}`;
+            return `${metadata.streams[0].height}x${metadata.streams[0].width}`;
         }
 
-        return `${metadata.VideoFrameWidth}x${metadata.VideoFrameHeight}`;
+        return `${metadata.streams[0].width}x${metadata.streams[0].height}`;
     }
 
     private finishConvert() {

@@ -1,4 +1,5 @@
-import type { Property } from "win32props";
+// import type { Property } from "win32props";
+import type { FfprobeData } from "fluent-ffmpeg";
 
 declare global {
     interface Window {
@@ -234,7 +235,7 @@ declare global {
             name: string;
         };
 
-        type Metadata = Property & {
+        type Metadata = FfprobeData & {
             Volume: MediaVolume;
         };
 

@@ -733,7 +733,7 @@ const displayMetadata = async () => {
     const file = playlistFiles.find((file) => file.id == playlistSelection.selectedId);
     if (!file || !Renderers.Player) return;
 
-    const metadata = await util.getMediaMetadata(file.fullPath, true);
+    const metadata = await util.getMediaMetadata(file.fullPath);
     const metadataString = JSON.stringify(metadata, undefined, 2).replaceAll('"', "");
     const result = await dialogs.metadataDialog(Renderers.Player, metadataString);
     if (result.response === 0) {

@@ -8,7 +8,8 @@ build({
             "out/**/*"
         ],
         extraResources:[
-            "./resources/ffmpeg.exe",
+            "./resources/ffmpeg?(.exe)",
+            "./resources/ffprobe?(.exe)",
         ],
         win:{
             target: {
