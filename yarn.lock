@@ -2546,7 +2546,7 @@ node-releases@^2.0.18:
 
 "node_wcpopup@git+https://github.com/mrdkprj/node_wcpopup.git":
   version "0.1.0"
-  resolved "git+https://github.com/mrdkprj/node_wcpopup.git#3db5b5f9dcc74c8543adaea50a60db87d2e0ef8e"
+  resolved "git+https://github.com/mrdkprj/node_wcpopup.git#b9040def0599efe0c830821efeea197af064e7b5"
 
 normalize-path@^3.0.0, normalize-path@~3.0.0:
   version "3.0.0"

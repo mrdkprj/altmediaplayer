@@ -29,13 +29,15 @@ class Editor {
     }
 
     end() {
+        if (this.type != "Edit") return;
+
         const stack = this.undoStack.pop();
 
         if (!stack) return;
 
         stack.newValue = this.data.name;
-        this.undoStack.push(stack);
 
+        this.undoStack.push(stack);
         this.data = this.toRenameData(stack.id, stack.newValue);
     }
 
