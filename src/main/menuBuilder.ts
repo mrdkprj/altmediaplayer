@@ -5,7 +5,7 @@ import play from "../assets/play.png";
 import pause from "../assets/pause.png";
 import forward from "../assets/forward.png";
 import backward from "../assets/backward.png";
-import { getDefaultConfig, Menu, MenuItem, MenuItemConstructorOptions } from "node_wcpopup";
+import { getDefaultConfig, Menu, MenuItem, MenuItemConstructorOptions } from "wcpopup-node";
 
 const getHWND = (window: BrowserWindow) => {
     const hwndBuffer = window.getNativeWindowHandle();

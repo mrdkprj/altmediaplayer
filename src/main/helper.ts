@@ -7,7 +7,7 @@ import play from "../assets/play.png";
 import pause from "../assets/pause.png";
 import forward from "../assets/forward.png";
 import backward from "../assets/backward.png";
-import { Menu } from "node_wcpopup";
+import { Menu } from "wcpopup-node";
 import { Builder } from "./menuBuilder";
 
 const isDev = process.env.NODE_ENV === "development";

@@ -22,7 +22,7 @@
   "license": "MIT",
   "dependencies": {
     "fluent-ffmpeg": "^2.1.2",
-    "node_wcpopup": "git+https://github.com/mrdkprj/node_wcpopup.git"
+    "wcpopup-node": "^0.1.0"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
