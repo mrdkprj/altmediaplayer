@@ -1132,7 +1132,7 @@ caniuse-lite@^1.0.30001646:
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001651.tgz#52de59529e8b02b1aedcaaf5c05d9e23c0c28138"
   integrity sha512-9Cf+Xv1jJNe1xPZLGuUXLNkE1BoDkqRqYyFJ9TDYSqhduqA4hu4oR9HluGoWYQC/aj8WHjsGVV+bwkh0+tegRg==
 
-cargo-cp-artifact@^0.1:
+cargo-cp-artifact@^0.1.9:
   version "0.1.9"
   resolved "https://registry.yarnpkg.com/cargo-cp-artifact/-/cargo-cp-artifact-0.1.9.tgz#32264a0a48109e26c48da334daff9a1da9d9b7c8"
   integrity sha512-6F+UYzTaGB+awsTXg0uSJA1/b/B3DDJzpKVRu0UmyI7DmNeaAl2RFHuTGIN6fEgpadRxoXGb7gbC1xo4C3IdyA==
@@ -2546,7 +2546,9 @@ node-releases@^2.0.18:
 
 "node_wcpopup@git+https://github.com/mrdkprj/node_wcpopup.git":
   version "0.1.0"
-  resolved "git+https://github.com/mrdkprj/node_wcpopup.git#681255e8207affde719d565c9c24d80cd14184ef"
+  resolved "git+https://github.com/mrdkprj/node_wcpopup.git#eea39e09e3ca5349ccaf826535d0f787635f7012"
+  dependencies:
+    cargo-cp-artifact "^0.1.9"
 
 normalize-path@^3.0.0, normalize-path@~3.0.0:
   version "3.0.0"
@@ -3248,13 +3250,6 @@ which@^2.0.1:
   integrity sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==
   dependencies:
     isexe "^2.0.0"
-
-win32props@^0.3.2:
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/win32props/-/win32props-0.3.2.tgz#766b90dc35ce9dd0cf4c0b412034d77ea97ce3ad"
-  integrity sha512-r7W/6Sp6tekiiEL06bBd0bP2KC0nWzLQQESJXQwDE4dalVXMX2IuTUAZcY/DIAsjB3CWHZL1tFOPcr9W6SspXA==
-  dependencies:
-    cargo-cp-artifact "^0.1"
 
 word-wrap@^1.2.5:
   version "1.2.5"

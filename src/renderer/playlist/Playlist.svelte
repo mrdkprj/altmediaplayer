@@ -10,18 +10,10 @@
     import { appState, dispatch } from "./appStateReducer";
     import { t, lang } from "../../translation/useTranslation"
 
+    let openContextMenu = false;
     let fileListContainer:HTMLDivElement;
 
     const List_Item_Padding = 10;
-
-    const onContextMenu = (e:MouseEvent) => {
-        e.preventDefault()
-        window.api.send("open-playlist-context", {x:e.screenX, y:e.screenY})
-    }
-
-    const openSortMenu = (e:MouseEvent) => {
-        window.api.send("open-sort-context", {x:e.screenX, y:e.screenY})
-    }
 
     const onPlaylistItemMousedown = (e:MouseEvent) => {
 
@@ -423,6 +415,29 @@
 
     }
 
+    const onContextMenu = (e:MouseEvent) => {
+        e.preventDefault()
+
+        if(navigator.userAgent.includes("Linux")){
+            openContextMenu = true;
+        }else{
+            window.api.send("open-playlist-context", {x:e.screenX, y:e.screenY})
+        }
+    }
+
+    const openSortMenu = (e:MouseEvent) => {
+        window.api.send("open-sort-context", {x:e.screenX, y:e.screenY})
+    }
+
+    const onMouseUp = (e:MouseEvent) => {
+        if(navigator.userAgent.includes("Linux")){
+            if(e.button == 2 && e.buttons == 0 && openContextMenu){
+                window.api.send("open-player-context", {x:e.clientX, y:e.clientY})
+                openContextMenu = false
+            }
+        }
+    }
+
     onMount(() => {
 
         window.api.receive("ready", prepare);
@@ -451,7 +466,7 @@
 
 </script>
 
-<svelte:window on:contextmenu={onContextMenu} on:keydown={onKeydown}/>
+<svelte:window on:contextmenu={onContextMenu} on:keydown={onKeydown} on:mouseup={onMouseUp}/>
 
 <div class="viewport">
     <div class="title-bar">

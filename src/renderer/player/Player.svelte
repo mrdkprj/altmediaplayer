@@ -10,6 +10,7 @@
     import Footer from "./Footer.svelte";
     import icon from "../../assets/icon.ico"
 
+    let openContextMenu = false;
     let video:HTMLVideoElement
     let container:HTMLDivElement
     let hideControlTimeout:number | null
@@ -494,7 +495,20 @@
     const onContextMenu = (e:MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
-        window.api.send("open-player-context", {x:e.screenX, y:e.screenY})
+        if(navigator.userAgent.includes("Linux")){
+            openContextMenu = true;
+        }else{
+            window.api.send("open-player-context", {x:e.screenX, y:e.screenY})
+        }
+    }
+
+    const onMouseUp = (e:MouseEvent) => {
+        if(navigator.userAgent.includes("Linux")){
+            if(e.button == 2 && e.buttons == 0 && openContextMenu){
+                window.api.send("open-player-context", {x:e.clientX, y:e.clientY})
+                openContextMenu = false
+            }
+        }
     }
 
     onMount(() => {
@@ -554,7 +568,7 @@
         </div>
     </div>
 
-    <div bind:this={container} class="video-container" on:dragover={e => e.preventDefault()} on:drop={onFileDrop} on:dblclick={togglePlay} on:contextmenu={onContextMenu} role="button" tabindex="-1">
+    <div bind:this={container} class="video-container" on:dragover={e => e.preventDefault()} on:drop={onFileDrop} on:dblclick={togglePlay} on:contextmenu={onContextMenu} on:mouseup={onMouseUp} role="button" tabindex="-1">
         <video
             bind:this={video}
             class="video"
