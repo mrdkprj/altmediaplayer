@@ -237,11 +237,13 @@
         }
     }
 
-    const setInputFocus = (node:HTMLInputElement) => {
-
+    const setRenameInputFocus = (node:HTMLInputElement) => {
         node.focus();
         node.setSelectionRange(0, node.value.lastIndexOf("."))
+    }
 
+    const setSearchInputFocus = (node:HTMLInputElement) => {
+        node.focus();
     }
 
     const onRenameInputKeyDown = (e:KeyboardEvent) => {
@@ -344,16 +346,53 @@
 
     }
 
-    // const onEscape = () => {
+    /* Search */
+    const toggleSearch = (forceClose = false) => {
+        const showSearchBar = forceClose ? false : !$appState.searchState.searching;
+        if(showSearchBar && $appState.rename.renaming){
+            return;
+        }
 
-    // }
+        dispatch({type:"toggleSearch", value:showSearchBar});
 
-    // const toggleSearch = () => {
-    //     const showSearchBar = !$appState.searching;
-    //     if(showSearchBar && $appState.rename.renaming){
-    //         endEditFileName();
-    //     }
-    // }
+        if(showSearchBar){
+            onSearchInput();
+        }else{
+            dispatch({type:"highlightItems", value:[]})
+        }
+
+    }
+
+    const onSearchInput = (e?: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
+
+        if(!$appState.files.length) return;
+
+        const { value } = e?.target as HTMLInputElement;
+
+        if(value){
+            const items = $appState.files.filter(file => file.name.toLowerCase().includes(value.toLowerCase())).map(file => file.id);
+            dispatch({type:"highlightItems", value: items})
+        }else{
+            dispatch({type:"highlightItems", value:[]})
+        }
+    }
+
+    const moveHighlight = (forward:boolean) => {
+        if(!$appState.searchState.itemIds.length) return;
+
+        if(forward){
+            const next = $appState.searchState.highlighIndex + 1;
+            if(next > $appState.searchState.itemIds.length - 1) return;
+            dispatch({type:"changeHighlight", value:next});
+        }else{
+            const prev = $appState.searchState.highlighIndex - 1;
+            if(prev < 0) return;
+            dispatch({type:"changeHighlight", value:prev});
+        }
+
+        const targetId = $appState.searchState.itemIds[$appState.searchState.highlighIndex];
+        scrollToElement(targetId)
+    }
 
     const toggleShuffle = () => {
         dispatch({type:"toggleShuffle"})
@@ -381,6 +420,23 @@
 
         if($appState.rename.renaming) return;
 
+        if($appState.searchState.searching){
+
+            if(e.key === "Escape"){
+                toggleSearch(true)
+            }
+
+            if(e.key === "F3"){
+                if(e.shiftKey){
+                    moveHighlight(false)
+                }else{
+                    moveHighlight(true)
+                }
+            }
+
+            return;
+        }
+
         if(e.key === "Enter"){
             return window.api.send("toggle-play", {})
         }
@@ -407,8 +463,7 @@
         }
 
         if(e.ctrlKey && e.key === "f"){
-            dispatch({type:"toggleSearch", value:!$appState.searching});
-            return;
+            return toggleSearch();
         }
 
         return handleShortcut("Playlist", e);
@@ -482,11 +537,14 @@
                 on:blur={$appState.preventBlur ? undefined : endEditFileName}
                 on:keydown={onRenameInputKeyDown}
                 bind:value={$appState.rename.inputValue}
-                use:setInputFocus
+                use:setRenameInputFocus
             />
         {/if}
-        {#if $appState.searching}
-            <input class="input search"/>
+        {#if $appState.searchState.searching}
+            <div class="searchArea">
+                <input type="text" spellcheck="false" class="input search" on:input={onSearchInput} use:setSearchInputFocus/>
+                <span class="searchResult">{$appState.searchState.itemIds.length ? $appState.searchState.highlighIndex + 1 : 0}/{$appState.searchState.itemIds.length}</span>
+            </div>
         {/if}
         <List onMouseDown={onPlaylistItemMousedown} scrollToElement={scrollToElement} getChildIndex={getChildIndex}/>
     </div>

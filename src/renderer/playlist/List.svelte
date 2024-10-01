@@ -81,6 +81,8 @@
             class="playlist-item"
             class:current={$appState.playlingItemId === file.id}
             class:selected={$appState.selection.selectedIds.includes(file.id)}
+            class:highlight={$appState.searchState.itemIds.includes(file.id)}
+            class:highlight-current={$appState.searchState.itemIds[$appState.searchState.highlighIndex] == file.id}
             class:draghover={$appState.dragState.targetId == file.id}
             data-dir={encodeURIComponent(file.dir)}
             on:mousedown={onMouseDown}

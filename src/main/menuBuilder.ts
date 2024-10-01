@@ -7,7 +7,7 @@ import forward from "../assets/forward.png";
 import backward from "../assets/backward.png";
 import { getDefaultConfig, Menu, MenuItem, MenuItemConstructorOptions } from "wcpopup-node";
 
-const getHWND = (window: BrowserWindow) => {
+const getWindowHandle = (window: BrowserWindow) => {
     const hwndBuffer = window.getNativeWindowHandle();
     let hwnd;
     if (os.platform() == "linux") {
@@ -113,7 +113,7 @@ class Builder implements Mp.MenuBuilder<Menu> {
         ];
 
         const menu = new Menu();
-        menu.buildFromTemplateWithConfig(getHWND(window), template, getMenuConfig(this.settings));
+        menu.buildFromTemplateWithConfig(getWindowHandle(window), template, getMenuConfig(this.settings));
         return menu;
     }
 
@@ -333,7 +333,7 @@ class Builder implements Mp.MenuBuilder<Menu> {
         ];
 
         const menu = new Menu();
-        menu.buildFromTemplateWithConfig(getHWND(window), template, getMenuConfig(this.settings));
+        menu.buildFromTemplateWithConfig(getWindowHandle(window), template, getMenuConfig(this.settings));
         return menu;
     }
 
@@ -414,7 +414,7 @@ class Builder implements Mp.MenuBuilder<Menu> {
         ];
 
         const menu = new Menu();
-        menu.buildFromTemplateWithConfig(getHWND(window), template, getMenuConfig(this.settings));
+        menu.buildFromTemplateWithConfig(getWindowHandle(window), template, getMenuConfig(this.settings));
         return menu;
     }
 

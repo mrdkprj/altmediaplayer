@@ -20,6 +20,13 @@ type DragState = {
     targetId: string;
 };
 
+type SearchState = {
+    searching: boolean;
+    itemIds: string[];
+    highlighIndex: number;
+    value: string;
+};
+
 type AppState = {
     playlingItemId: string;
     selection: Mp.PlaylistItemSelection;
@@ -29,7 +36,7 @@ type AppState = {
     preventBlur: boolean;
     rename: RenameState;
     dragState: DragState;
-    searching: boolean;
+    searchState: SearchState;
 };
 
 export const initialAppState: AppState = {
@@ -55,7 +62,12 @@ export const initialAppState: AppState = {
         startId: "",
         targetId: "",
     },
-    searching: false,
+    searchState: {
+        searching: false,
+        itemIds: [],
+        highlighIndex: 0,
+        value: "",
+    },
 };
 
 type AppAction =
@@ -78,7 +90,9 @@ type AppAction =
     | { type: "startDrag"; value: { startId: string; dir: string } }
     | { type: "drag"; value: string }
     | { type: "endDrag" }
-    | { type: "toggleSearch"; value: boolean };
+    | { type: "toggleSearch"; value: boolean }
+    | { type: "highlightItems"; value: string[] }
+    | { type: "changeHighlight"; value: number };
 
 const updater = (state: AppState, action: AppAction) => {
     switch (action.type) {
@@ -150,7 +164,13 @@ const updater = (state: AppState, action: AppAction) => {
             return { ...state, shuffle: !state.shuffle };
 
         case "toggleSearch":
-            return { ...state, searching: action.value };
+            return { ...state, searchState: { ...state.searchState, searching: action.value } };
+
+        case "highlightItems":
+            return { ...state, searchState: { ...state.searchState, itemIds: action.value, highlighIndex: 0 } };
+
+        case "changeHighlight":
+            return { ...state, searchState: { ...state.searchState, highlighIndex: action.value } };
 
         default:
             return state;
