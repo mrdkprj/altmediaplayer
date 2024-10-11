@@ -89,7 +89,7 @@ const playerContextMenuCallback = (menu: keyof Mp.PlayerContextMenuSubTypeMap, a
         case "Capture":
             respond("Player", "capture-media", {});
             break;
-        case "OpenConfigFile":
+        case "ViewSettingsJson":
             openConfigFileJson();
             break;
     }

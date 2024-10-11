@@ -42,7 +42,7 @@ const getMenuConfig = (setting: Mp.Settings) => {
 
 const ADD_TAG_MENU_Id = "addTag";
 
-class Builder implements Mp.MenuBuilder<Menu> {
+class Builder {
     private settings: Mp.Settings;
     private t: (key: keyof Mp.Labels) => string;
 

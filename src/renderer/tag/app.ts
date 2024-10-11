@@ -1,9 +1,9 @@
-// import "./playlist.css"
+import "./tag.css";
 import "../common.css";
-import Tag from "./Tag.svelte"
+import Tag from "./Tag.svelte";
 
 const app = new Tag({
-  target: document.body,
-})
+    target: document.body,
+});
 
-export default app
+export default app;

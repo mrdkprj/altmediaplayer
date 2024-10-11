@@ -23,7 +23,7 @@ const load = (window: BrowserWindow, name: RendererName) => {
 class Helper {
     private settings: Mp.Settings;
     private t: (key: keyof Mp.Labels) => string;
-    private menuBuilder: Mp.MenuBuilder<any>;
+    private menuBuilder: Builder;
     private menus: { [key in Mp.ContextMenuName]: Menu };
 
     constructor(settings: Mp.Settings) {

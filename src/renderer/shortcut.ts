@@ -19,7 +19,7 @@ const handlePlayerShortcut = (e: KeyboardEvent) => {
     }
 
     if (e.ctrlKey && e.shiftKey && e.key === "P") {
-        return window.api.send("shortcut", { renderer: "Player", menu: "OpenConfigFile" });
+        return window.api.send("shortcut", { renderer: "Player", menu: "ViewSettingsJson" });
     }
 
     if (e.ctrlKey && e.key === "p") {

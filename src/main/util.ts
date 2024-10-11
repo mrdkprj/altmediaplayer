@@ -152,9 +152,6 @@ class Util {
                 resolve(metadata);
             });
         });
-        // const metadata = (await win32props.read(fullPath, format)) as Mp.Metadata;
-        // metadata.Volume = await this.getVolume(fullPath);
-        // return metadata;
     }
 
     async getVolume(sourcePath: string): Promise<Mp.MediaVolume> {

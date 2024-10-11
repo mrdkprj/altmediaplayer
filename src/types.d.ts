@@ -77,16 +77,6 @@ declare global {
     }
 
     namespace Mp {
-        interface MenuBuilder<T> {
-            empty(): T;
-            popup(menu: T, x: number, y: number): Promise<void>;
-            changeTheme(menu: T, theme: Mp.Theme): void;
-            createPlayerContextMenu(window: BrowserWindow, onClick: Mp.PlayerContextMenuCallback<keyof Mp.PlayerContextMenuSubTypeMap>): T;
-            createPlaylistContextMenu(window: BrowserWindow, onClick: Mp.PlaylistContextMenuCallback<keyof Mp.PlaylistContextMenuSubTypeMap>): T;
-            refreshTagContextMenu(parent: T, tags: string[], onClick: Mp.PlaylistContextMenuCallback<"Tag">): void;
-            createPlaylistSortContextMenu(window: BrowserWindow, onClick: Mp.PlaylistContextMenuCallback<"Sort" | "GroupBy">): T;
-        }
-
         type Lang = "en" | "ja";
         type Theme = "dark" | "light";
         type ConvertFormat = "MP4" | "MP3";
@@ -104,7 +94,7 @@ declare global {
             Theme: Mp.Theme;
             Capture: null;
             PictureInPicture: null;
-            OpenConfigFile: null;
+            ViewSettingsJson: null;
         };
 
         type PlaylistContextMenuSubTypeMap = {
