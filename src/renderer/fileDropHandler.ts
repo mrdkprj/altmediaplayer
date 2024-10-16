@@ -14,14 +14,14 @@ export const getDropFiles = (e: DragEvent) => {
 
     const items = e.dataTransfer ? e.dataTransfer.items : [];
 
-    return Array.from(items)
+    const files = Array.from(items)
         .filter((item) => item.kind === "file")
-        .map((item) => {
-            const file = item.getAsFile();
-            const extension = ext(file?.name);
-            const path = file?.path ?? "";
-            return { path, extension };
-        })
-        .filter((item) => VideoExtensions.concat(AudioExtensions).includes(item.extension))
-        .map((item) => item.path);
+        .map((item) => item.getAsFile())
+        .filter((item) => item != null);
+
+    if (!files.length) return [];
+
+    const fullPaths = window.api.onFileDrop(files);
+
+    return fullPaths.filter((path) => VideoExtensions.concat(AudioExtensions).includes(ext(path)));
 };

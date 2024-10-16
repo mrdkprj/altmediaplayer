@@ -74,7 +74,7 @@
         window.api.send("media-state-change", $appState.media);
     };
 
-    const onFileDrop = (e: DragEvent) => {
+    const onDrop = (e: DragEvent) => {
         const files = getDropFiles(e);
 
         if (files.length) {
@@ -524,7 +524,7 @@
         bind:this={container}
         class="video-container"
         on:dragover={(e) => e.preventDefault()}
-        on:drop={onFileDrop}
+        on:drop={onDrop}
         on:dblclick={togglePlay}
         on:contextmenu={onContextMenu}
         on:mouseup={onMouseUp}

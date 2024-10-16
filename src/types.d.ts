@@ -74,6 +74,7 @@ declare global {
         send: <K extends keyof MainChannelEventMap>(channel: K, data: MainChannelEventMap[K]) => void;
         receive: <K extends keyof RendererChannelEventMap>(channel: K, listener: (data: RendererChannelEventMap[K]) => void) => void;
         removeAllListeners: <K extends keyof RendererChannelEventMap>(channel: K) => void;
+        onFileDrop: (files: File[]) => string[];
     }
 
     namespace Mp {
@@ -187,6 +188,11 @@ declare global {
             src: string;
             name: string;
             date: number;
+            extension: string;
+        };
+
+        type DroppedFile = {
+            path: string;
             extension: string;
         };
 
