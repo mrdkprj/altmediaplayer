@@ -40,6 +40,7 @@ declare global {
         "close-tag": Mp.Event;
         "save-tags": Mp.SaveTagsEvent;
         "open-config-file": Mp.Event;
+        "cancel-move": Mp.Event;
         error: Mp.ErrorEvent;
     };
 
@@ -68,6 +69,8 @@ declare global {
         "after-convert": Mp.Event;
         "picture-in-picture": Mp.Event;
         "open-tag-editor": Mp.OpenTagEditorEvent;
+        "move-started": Mp.MoveStartEvent;
+        "move-progress": Mp.MoveProgressEvent;
     };
 
     interface Api {
@@ -372,6 +375,16 @@ declare global {
 
         type OpenFileDialogRequest = {
             fullPath: string;
+        };
+
+        type MoveStartEvent = {
+            info: string;
+            cancellable: boolean;
+        };
+
+        type MoveProgressEvent = {
+            progress: number;
+            done: boolean;
         };
 
         type ErrorEvent = {

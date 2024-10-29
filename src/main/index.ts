@@ -3,6 +3,7 @@ import { app, ipcMain, clipboard, shell, protocol, nativeTheme } from "electron"
 import fs from "fs";
 import path from "path";
 import url from "url";
+import { cancel, mv, Progress, reserveId } from "movefile-node";
 
 import util from "./util";
 import Settings from "./settings";
@@ -496,10 +497,14 @@ const deleteFile = async (selectedIds: string[]) => {
     }
 };
 
+let cancellationId = -1;
+
 const moveFile = async (selectedIds: string[]) => {
     if (!Renderers.Playlist) return;
 
     if (selectedIds.length != 1) return;
+
+    if (cancellationId >= 0) throw new Error("Move is in progress");
 
     try {
         const files = playlistFiles.filter((file) => file.id == selectedIds[0]);
@@ -516,11 +521,40 @@ const moveFile = async (selectedIds: string[]) => {
         await releaseFile(selectedIds);
         settings.data.defaultPath = destPath;
 
-        removeFromPlaylist(selectedIds);
+        const cancellable = fs.statSync(file.fullPath).dev != fs.statSync(path.dirname(destPath)).dev;
+        const info = `Moving "${file.fullPath}" to "${destPath}"`;
+        respond("Playlist", "move-started", { info, cancellable });
 
-        fs.renameSync(file.fullPath, destPath);
+        if (cancellable) {
+            cancellationId = reserveId();
+            await mv(file.fullPath, destPath, moveProgressCallback, cancellationId);
+        } else {
+            cancellationId = 1;
+            fs.renameSync(file.fullPath, destPath);
+        }
+
+        removeFromPlaylist(selectedIds);
     } catch (ex: any) {
         dialogs.showErrorMessage(ex);
+    }
+};
+
+const moveProgressCallback = (e: Progress) => {
+    const progress = e.transferred / e.totalFileSize;
+    const done = progress == 1;
+    if (done) {
+        cancellationId = -1;
+    }
+    respond("Playlist", "move-progress", { progress, done });
+};
+
+const cancelMoveFile = () => {
+    if (cancellationId >= 0) {
+        if (cancel(cancellationId)) {
+            respond("Playlist", "move-progress", { progress: 100, done: true });
+        } else {
+            dialogs.showErrorMessage("Failed to cancel.");
+        }
     }
 };
 
@@ -913,5 +947,6 @@ const registerIpcChannels = () => {
     addEventHandler("save-tags", saveTags);
     addEventHandler("close-tag", closeTagEditor);
     addEventHandler("open-config-file", openConfigFileJson);
+    addEventHandler("cancel-move", cancelMoveFile);
     addEventHandler("error", (e: Mp.ErrorEvent) => dialogs.showErrorMessage(e.message));
 };

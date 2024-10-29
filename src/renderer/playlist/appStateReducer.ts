@@ -27,6 +27,13 @@ type SearchState = {
     value: string;
 };
 
+type MoveState = {
+    started: boolean;
+    cancellable: boolean;
+    progress: number;
+    info: string;
+};
+
 type AppState = {
     playlingItemId: string;
     selection: Mp.PlaylistItemSelection;
@@ -37,6 +44,7 @@ type AppState = {
     rename: RenameState;
     dragState: DragState;
     searchState: SearchState;
+    moveState: MoveState;
 };
 
 export const initialAppState: AppState = {
@@ -68,6 +76,12 @@ export const initialAppState: AppState = {
         highlighIndex: 0,
         value: "",
     },
+    moveState: {
+        started: false,
+        cancellable: false,
+        progress: 0,
+        info: "",
+    },
 };
 
 type AppAction =
@@ -92,7 +106,10 @@ type AppAction =
     | { type: "endDrag" }
     | { type: "toggleSearch"; value: boolean }
     | { type: "highlightItems"; value: string[] }
-    | { type: "changeHighlight"; value: number };
+    | { type: "changeHighlight"; value: number }
+    | { type: "startMove"; value: Mp.MoveStartEvent }
+    | { type: "moveProgress"; value: number }
+    | { type: "endMove" };
 
 const updater = (state: AppState, action: AppAction) => {
     switch (action.type) {
@@ -171,6 +188,15 @@ const updater = (state: AppState, action: AppAction) => {
 
         case "changeHighlight":
             return { ...state, searchState: { ...state.searchState, highlighIndex: action.value } };
+
+        case "startMove":
+            return { ...state, moveState: { ...state.moveState, started: true, cancellable: action.value.cancellable, info: action.value.info, progress: 0 } };
+
+        case "endMove":
+            return { ...state, moveState: { ...state.moveState, started: false, cancellable: false, info: "", progress: 0 } };
+
+        case "moveProgress":
+            return { ...state, moveState: { ...state.moveState, progress: action.value } };
 
         default:
             return state;

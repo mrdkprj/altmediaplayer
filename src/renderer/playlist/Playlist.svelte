@@ -214,6 +214,7 @@
         }
     };
 
+    /* input */
     const setRenameInputFocus = (node: HTMLInputElement) => {
         node.focus();
         node.setSelectionRange(0, node.value.lastIndexOf("."));
@@ -233,6 +234,7 @@
         }
     };
 
+    /* rename */
     const startEditFileName = () => {
         const selectedElement = document.getElementById($appState.selection.selectedId);
 
@@ -358,6 +360,23 @@
         scrollToElement(targetId);
     };
 
+    /* Move file */
+    const onFileMoveStart = (e: Mp.MoveStartEvent) => {
+        dispatch({ type: "startMove", value: e });
+    };
+
+    const onFileMoveProgress = (e: Mp.MoveProgressEvent) => {
+        if (e.done) {
+            dispatch({ type: "endMove" });
+        } else {
+            dispatch({ type: "moveProgress", value: e.progress });
+        }
+    };
+
+    const cancelMove = () => {
+        window.api.send("cancel-move", {});
+    };
+
     const toggleShuffle = () => {
         dispatch({ type: "toggleShuffle" });
         window.api.send("toggle-shuffle", {});
@@ -464,6 +483,8 @@
         window.api.receive("start-rename", startEditFileName);
         window.api.receive("restart", clearPlaylist);
         window.api.receive("clear-playlist", clearPlaylist);
+        window.api.receive("move-started", onFileMoveStart);
+        window.api.receive("move-progress", onFileMoveProgress);
 
         return () => {
             window.api.removeAllListeners("ready");
@@ -475,6 +496,8 @@
             window.api.removeAllListeners("start-rename");
             window.api.removeAllListeners("restart");
             window.api.removeAllListeners("clear-playlist");
+            window.api.removeAllListeners("move-started");
+            window.api.removeAllListeners("move-progress");
         };
     });
 </script>
@@ -565,5 +588,17 @@
                 </svg>
             {/if}
         </div>
+        {#if $appState.moveState.started}
+            <div class="btn">
+                <input type="range" min="0" max="100" value="0" style="--theme-color: {$appState.moveState.progress}px" title={$appState.moveState.info} />
+                {#if $appState.moveState.cancellable}
+                    <div class="btn cancel" on:click={cancelMove} on:keydown={handleKeyEvent} role="button" tabindex="-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5" />
+                        </svg>
+                    </div>
+                {/if}
+            </div>
+        {/if}
     </div>
 </div>
