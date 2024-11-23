@@ -22,7 +22,6 @@
   "license": "MIT",
   "dependencies": {
     "fluent-ffmpeg": "^2.1.2",
-    "movefile-node": "git+https://github.com/mrdkprj/movefile.git",
     "wcpopup-node": "^0.1.0"
   },
   "devDependencies": {

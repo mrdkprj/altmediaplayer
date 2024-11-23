@@ -3,7 +3,6 @@ import { app, ipcMain, clipboard, shell, protocol, nativeTheme } from "electron"
 import fs from "fs";
 import path from "path";
 import url from "url";
-import { cancel, mv, Progress, reserveId } from "movefile-node";
 
 import util from "./util";
 import Settings from "./settings";
@@ -497,64 +496,45 @@ const deleteFile = async (selectedIds: string[]) => {
     }
 };
 
-let cancellationId = -1;
-
 const moveFile = async (selectedIds: string[]) => {
     if (!Renderers.Playlist) return;
 
-    if (selectedIds.length != 1) return;
+    const files = playlistFiles.filter((file) => selectedIds.includes(file.id));
 
-    if (cancellationId >= 0) throw new Error("Move is in progress");
+    if (!files.length) return;
 
+    const sourceDirs = new Set(files.map((file) => file.dir));
+
+    if (sourceDirs.size > 1) return;
+
+    const defaultPath = settings.data.defaultPath ? settings.data.defaultPath : files[0].dir;
+    const destPaths = dialogs.showOpenDialog(Renderers.Playlist, defaultPath);
+
+    if (!destPaths?.length) return;
+
+    const useRename = path.parse(files[0].fullPath).root == path.parse(destPaths[0]).root;
+    console.log(useRename);
     try {
-        const files = playlistFiles.filter((file) => file.id == selectedIds[0]);
-
-        if (!files.length) return;
-
-        const file = files[0];
-
-        const defaultPath = settings.data.defaultPath && fs.existsSync(settings.data.defaultPath) ? path.join(settings.data.defaultPath, file.name) : file.fullPath;
-        const destPath = dialogs.showSaveDialog(Renderers.Playlist, defaultPath);
-
-        if (!destPath || file.fullPath == destPath) return;
-
         await releaseFile(selectedIds);
+
+        const destPath = destPaths[0];
         settings.data.defaultPath = destPath;
 
-        const cancellable = fs.statSync(file.fullPath).dev != fs.statSync(path.dirname(destPath)).dev;
-        const info = `Moving "${file.fullPath}" to "${destPath}"`;
-        respond("Playlist", "move-started", { info, cancellable });
+        respond("Playlist", "move-started", {});
 
-        if (cancellable) {
-            cancellationId = reserveId();
-            await mv(file.fullPath, destPath, moveProgressCallback, cancellationId);
-        } else {
-            cancellationId = 1;
-            fs.renameSync(file.fullPath, destPath);
-        }
-
-        removeFromPlaylist(selectedIds);
+        files.forEach((file) => {
+            if (useRename) {
+                fs.renameSync(file.fullPath, path.join(destPath, path.basename(file.fullPath)));
+            } else {
+                fs.copyFileSync(file.fullPath, path.join(destPath, path.basename(file.fullPath)));
+                fs.rmSync(file.fullPath);
+            }
+            removeFromPlaylist([file.id]);
+        });
+        respond("Playlist", "move-end", {});
     } catch (ex: any) {
         dialogs.showErrorMessage(ex);
-    }
-};
-
-const moveProgressCallback = (e: Progress) => {
-    const progress = e.transferred / e.totalFileSize;
-    const done = progress == 1;
-    if (done) {
-        cancellationId = -1;
-    }
-    respond("Playlist", "move-progress", { progress, done });
-};
-
-const cancelMoveFile = () => {
-    if (cancellationId >= 0) {
-        if (cancel(cancellationId)) {
-            respond("Playlist", "move-progress", { progress: 100, done: true });
-        } else {
-            dialogs.showErrorMessage("Failed to cancel.");
-        }
+        respond("Playlist", "move-end", {});
     }
 };
 
@@ -947,6 +927,5 @@ const registerIpcChannels = () => {
     addEventHandler("save-tags", saveTags);
     addEventHandler("close-tag", closeTagEditor);
     addEventHandler("open-config-file", openConfigFileJson);
-    addEventHandler("cancel-move", cancelMoveFile);
     addEventHandler("error", (e: Mp.ErrorEvent) => dialogs.showErrorMessage(e.message));
 };

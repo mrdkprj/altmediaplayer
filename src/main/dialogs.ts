@@ -56,4 +56,11 @@ export default class Dialogs {
             defaultPath: defaultPath,
         });
     }
+
+    showOpenDialog(window: BrowserWindow, defaultPath?: string) {
+        return dialog.showOpenDialogSync(window, {
+            defaultPath: defaultPath,
+            properties: ["openDirectory"],
+        });
+    }
 }

@@ -1,4 +1,3 @@
-// import type { Property } from "win32props";
 import type { FfprobeData } from "fluent-ffmpeg";
 
 declare global {
@@ -40,7 +39,6 @@ declare global {
         "close-tag": Mp.Event;
         "save-tags": Mp.SaveTagsEvent;
         "open-config-file": Mp.Event;
-        "cancel-move": Mp.Event;
         error: Mp.ErrorEvent;
     };
 
@@ -69,8 +67,9 @@ declare global {
         "after-convert": Mp.Event;
         "picture-in-picture": Mp.Event;
         "open-tag-editor": Mp.OpenTagEditorEvent;
-        "move-started": Mp.MoveStartEvent;
-        "move-progress": Mp.MoveProgressEvent;
+        "move-started": Mp.Event;
+        "move-end": Mp.Event;
+        "move-cancelled": Mp.Event;
     };
 
     interface Api {
@@ -375,16 +374,6 @@ declare global {
 
         type OpenFileDialogRequest = {
             fullPath: string;
-        };
-
-        type MoveStartEvent = {
-            info: string;
-            cancellable: boolean;
-        };
-
-        type MoveProgressEvent = {
-            progress: number;
-            done: boolean;
         };
 
         type ErrorEvent = {

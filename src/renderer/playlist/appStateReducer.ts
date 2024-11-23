@@ -29,9 +29,6 @@ type SearchState = {
 
 type MoveState = {
     started: boolean;
-    cancellable: boolean;
-    progress: number;
-    info: string;
 };
 
 type AppState = {
@@ -78,9 +75,6 @@ export const initialAppState: AppState = {
     },
     moveState: {
         started: false,
-        cancellable: false,
-        progress: 0,
-        info: "",
     },
 };
 
@@ -107,8 +101,7 @@ type AppAction =
     | { type: "toggleSearch"; value: boolean }
     | { type: "highlightItems"; value: string[] }
     | { type: "changeHighlight"; value: number }
-    | { type: "startMove"; value: Mp.MoveStartEvent }
-    | { type: "moveProgress"; value: number }
+    | { type: "startMove" }
     | { type: "endMove" };
 
 const updater = (state: AppState, action: AppAction) => {
@@ -190,13 +183,10 @@ const updater = (state: AppState, action: AppAction) => {
             return { ...state, searchState: { ...state.searchState, highlighIndex: action.value } };
 
         case "startMove":
-            return { ...state, moveState: { ...state.moveState, started: true, cancellable: action.value.cancellable, info: action.value.info, progress: 0 } };
+            return { ...state, moveState: { ...state.moveState, started: true, progress: 0 } };
 
         case "endMove":
-            return { ...state, moveState: { ...state.moveState, started: false, cancellable: false, info: "", progress: 0 } };
-
-        case "moveProgress":
-            return { ...state, moveState: { ...state.moveState, progress: action.value } };
+            return { ...state, moveState: { ...state.moveState, started: false, progress: 0 } };
 
         default:
             return state;
