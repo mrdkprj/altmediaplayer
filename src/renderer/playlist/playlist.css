@@ -184,10 +184,6 @@
     color: var(--primary-highlight-color);
 }
 
-.cancel {
-    cursor: pointer;
-}
-
 .loader8 {
     width: 150px;
     height: 16px;

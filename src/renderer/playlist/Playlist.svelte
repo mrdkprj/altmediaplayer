@@ -369,10 +369,6 @@
         dispatch({ type: "endMove" });
     };
 
-    const cancelMove = () => {
-        window.api.send("cancel-move", {});
-    };
-
     const onMoveCancel = () => {
         dispatch({ type: "endMove" });
     };
@@ -593,11 +589,6 @@
         {#if $appState.moveState.started}
             <div class="btn">
                 <div class="loader8"></div>
-                <div class="btn cancel" on:click={cancelMove} on:keydown={handleKeyEvent} role="button" tabindex="-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5" />
-                    </svg>
-                </div>
             </div>
         {/if}
     </div>
