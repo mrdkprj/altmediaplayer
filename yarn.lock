@@ -3236,10 +3236,10 @@ vitefu@^0.2.5:
   resolved "https://registry.yarnpkg.com/vitefu/-/vitefu-0.2.5.tgz#c1b93c377fbdd3e5ddd69840ea3aa70b40d90969"
   integrity sha512-SgHtMLoqaeeGnd2evZ849ZbACbnwQCIwRH57t18FxcXoZop0uQu0uzlIhJBlF/eWVzuce0sHeqPcDo+evVcg8Q==
 
-wcpopup-node@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/wcpopup-node/-/wcpopup-node-0.1.0.tgz#ee0284d45006e36b64a8d41f12eb6788987e3a52"
-  integrity sha512-h//jWxdLGqkno5bays8QCl6GLpV0k9ZNgs03tNnkBjWwK1jFv/yclM+78N7rutydekgyKF1p6krk9BxDAzzc2w==
+wcpopup-node@^0.1.4:
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/wcpopup-node/-/wcpopup-node-0.1.4.tgz#51e295bc8d4a1267879a5c7345bdfdfa6ee5e7a4"
+  integrity sha512-Ij6XUyMz1yHlMrsGrA3fEGZ9JyundAJmWrArNFcPG5iWMl+eGnVl+zSnfES8C3knTGb9xQqqAScTuenokRgRTw==
   dependencies:
     cargo-cp-artifact "^0.1.9"
 

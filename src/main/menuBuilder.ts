@@ -29,14 +29,15 @@ const getWindowHandle = (window: BrowserWindow) => {
 
 const getMenuConfig = (setting: Mp.Settings) => {
     const config = getDefaultConfig();
-    config.color.dark.color = 0xefefef;
-    config.color.dark.backgroundColor = 0x202020;
+    config.color.dark.color = "#efefef";
+    config.color.dark.backgroundColor = "#202020";
+    config.color.dark.hoverBackgroundColor = "#373535";
     config.corner = "Round";
     config.theme = setting.theme == "dark" ? "dark" : "light";
     config.size.borderSize = 0;
     config.font.fontFamily = "Yu Gothic UI";
     config.font.darkFontWeight = "Normal";
-    config.size.itemHorizontalPadding = 0;
+    config.size.itemHorizontalPadding = 10;
     return config;
 };
 
