@@ -808,6 +808,13 @@ const renameFile = async (e: Mp.RenameRequest) => {
 
     const fileIndex = playlistFiles.findIndex((file) => file.id == e.data.id);
     const file = playlistFiles[fileIndex];
+    const x = 10;
+    if (x > 0) {
+        console.log(e);
+        console.log(file);
+        respond("Playlist", "after-rename", { file: file, error: true });
+        return;
+    }
     const filePath = file.fullPath;
     const newPath = path.join(path.dirname(filePath), e.data.name);
 

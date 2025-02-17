@@ -1,6 +1,6 @@
 {
-  "name": "altmediaplayer2",
-  "productName": "AltMediaPlayer2",
+  "name": "altmediaplayer",
+  "productName": "AltMediaPlayer",
   "version": "1.2.2",
   "description": "MediaPlayer",
   "main": "out/main/index.js",
