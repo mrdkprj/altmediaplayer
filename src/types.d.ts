@@ -221,6 +221,11 @@ declare global {
             selectedIds: string[];
         };
 
+        type MoveUptoSelection = {
+            selectId: string | undefined;
+            scrollToId: string | undefined;
+        };
+
         type PlaylistDragState = {
             dragging: boolean;
             startElement: HTMLElement | null;

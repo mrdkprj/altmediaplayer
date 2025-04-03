@@ -189,18 +189,57 @@
     };
 
     const moveSelectionUpto = (e: KeyboardEvent) => {
-        if (!e.shiftKey) return;
-
         if (!$appState.files.length) return;
 
         e.preventDefault();
 
-        const targetId = e.key === "Home" ? $appState.files[0].id : $appState.files[$appState.files.length - 1].id;
+        const nextSelection = findNextSelection(e.key === "Home");
 
-        if (!targetId) return;
+        if (!nextSelection.selectId || !nextSelection.scrollToId) return;
 
-        selectByShift(targetId);
-        scrollToElement(targetId);
+        if (e.shiftKey) {
+            selectByShift(nextSelection.selectId);
+        } else {
+            select(nextSelection.selectId);
+        }
+        scrollToElement(nextSelection.scrollToId);
+    };
+
+    const findNextSelection = (upward: boolean): Mp.MoveUptoSelection => {
+        const defaultTarget = upward ? $appState.files[0] : $appState.files[$appState.files.length - 1];
+
+        const nextSelection: Mp.MoveUptoSelection = { selectId: defaultTarget.id, scrollToId: $appState.sortType.groupBy ? defaultTarget.id : encodeURIComponent(defaultTarget.dir) };
+
+        const dirs = Array.from(document.querySelectorAll(".group"));
+
+        if (dirs.length <= 1 || !$appState.sortType.groupBy) {
+            return nextSelection;
+        }
+
+        const current = document.getElementById($appState.selection.selectedId);
+        const currentFile = $appState.files.find((file) => file.id == $appState.selection.selectedId);
+
+        if (!current || !currentFile) return nextSelection;
+
+        const nearest = upward ? current.previousElementSibling : current.nextElementSibling;
+
+        if (!nearest) return nextSelection;
+
+        const dir = currentFile.dir;
+
+        if (!nearest.classList.contains("group")) {
+            const target = upward ? $appState.files.find((file) => file.dir == dir) : $appState.files.findLast((file) => file.dir == dir);
+            if (!target) return nextSelection;
+            return { selectId: target.id, scrollToId: encodeURIComponent(target.dir) };
+        }
+
+        if (upward && nearest.id == dirs[0].id) return nextSelection;
+
+        if (!upward && nearest.id == dirs[dirs.length - 1].id) return nextSelection;
+
+        const target = upward ? $appState.files.find((file) => file.dir != dir) : $appState.files.findLast((file) => file.dir != dir);
+        if (!target) return nextSelection;
+        return { selectId: target.id, scrollToId: encodeURIComponent(target.dir) };
     };
 
     const sendSelection = () => {

@@ -35,7 +35,7 @@ const getMenuConfig = (setting: Mp.Settings) => {
     config.corner = "Round";
     config.theme = setting.theme == "dark" ? "dark" : "light";
     config.size.borderSize = 0;
-    config.font.fontFamily = "Yu Gothic UI";
+    config.font.fontFamily = "Segoe UI";
     config.font.darkFontWeight = "Normal";
     config.size.itemHorizontalPadding = 10;
     return config;
