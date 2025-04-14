@@ -41,8 +41,6 @@ const getMenuConfig = (setting: Mp.Settings) => {
     return config;
 };
 
-const ADD_TAG_MENU_Id = "addTag";
-
 class Builder {
     private settings: Mp.Settings;
     private t: (key: keyof Mp.Labels) => string;
@@ -310,17 +308,6 @@ class Builder {
             },
             { type: "separator" },
             {
-                id: ADD_TAG_MENU_Id,
-                label: this.t("tags"),
-                submenu: this.createTagContextMenu(onClick),
-            },
-            {
-                label: this.t("manageTag"),
-                id: "ManageTags",
-                click: () => onClick("ManageTags"),
-            },
-            { type: "separator" },
-            {
                 label: this.t("moveFile"),
                 id: "Move",
                 click: () => onClick("Move"),
@@ -336,42 +323,6 @@ class Builder {
         const menu = new Menu();
         menu.buildFromTemplateWithConfig(getWindowHandle(window), template, getMenuConfig(this.settings));
         return menu;
-    }
-
-    private createTagContextMenu(onClick: Mp.PlaylistContextMenuCallback<"Tag">) {
-        const template: MenuItem[] = this.settings.tags.sort().map((tag) => {
-            return {
-                id: tag,
-                value: tag,
-                label: tag,
-                click: () => onClick("Tag", tag),
-            };
-        });
-        return template;
-    }
-
-    refreshTagContextMenu(parent: Menu, tags: string[], onClick: Mp.PlaylistContextMenuCallback<"Tag">) {
-        const menu = parent.getMenuItemById(ADD_TAG_MENU_Id);
-
-        if (menu && menu.submenu) {
-            const menuItemMap = menu.submenu.items().reduce((obj: { [key: string]: MenuItem }, item) => ((obj[item.id ?? ""] = item), obj), {});
-            const keys = [...new Set([...tags, ...Object.keys(menuItemMap)])].sort();
-
-            keys.forEach((key, index) => {
-                if (menuItemMap[key] && !tags.includes(key)) {
-                    menu.submenu?.remove(menuItemMap[key]);
-                }
-
-                if (!menuItemMap[key] && tags.includes(key)) {
-                    const item: MenuItem = {
-                        id: key,
-                        label: key,
-                        click: () => onClick("Tag", key),
-                    };
-                    menu.submenu?.insert(index, item);
-                }
-            });
-        }
     }
 
     createPlaylistSortContextMenu(window: BrowserWindow, onClick: Mp.PlaylistContextMenuCallback<"Sort" | "GroupBy">) {

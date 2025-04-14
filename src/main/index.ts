@@ -26,7 +26,6 @@ const Renderers: Renderer = {
     Player: null,
     Playlist: null,
     Convert: null,
-    Tag: null,
 };
 
 const playlistFiles: Mp.MediaFile[] = [];
@@ -136,12 +135,6 @@ const playlistContextMenuCallback = (menu: keyof Mp.PlaylistContextMenuSubTypeMa
         case "GroupBy":
             toggleGroupBy();
             break;
-        case "Tag":
-            addTagToFile(args ?? "");
-            break;
-        case "ManageTags":
-            openTagEditor();
-            break;
     }
 };
 
@@ -200,7 +193,6 @@ app.on("ready", () => {
     Renderers.Player = helper.createPlayerWindow();
     Renderers.Playlist = helper.createPlaylistWindow(Renderers.Player);
     Renderers.Convert = helper.createConvertWindow(Renderers.Player);
-    Renderers.Tag = helper.createTagEditorWindow(Renderers.Player);
 
     helper.createPlayerContextMenu("Player", Renderers.Player, playerContextMenuCallback);
     helper.createPlaylistContextMenu("Playlist", Renderers.Playlist, playlistContextMenuCallback);
@@ -755,54 +747,6 @@ const displayMetadata = async () => {
     }
 };
 
-const openTagEditor = () => {
-    respond("Tag", "open-tag-editor", { tags: settings.data.tags });
-    Renderers.Tag?.show();
-};
-
-const saveTags = (e: Mp.SaveTagsEvent) => {
-    settings.data.tags = e.tags;
-    helper.refreshTagContextMenu(e.tags, playlistContextMenuCallback);
-};
-
-const closeTagEditor = () => Renderers.Tag?.hide();
-
-const addTagToFile = async (tagName: string) => {
-    const fileIndex = playlistFiles.findIndex((file) => file.id == playlistSelection.selectedId);
-
-    if (fileIndex < 0) return;
-
-    const currentTime = await releaseFile([playlistFiles[fileIndex].id]);
-
-    try {
-        const file = playlistFiles[fileIndex];
-        const tag = `[${tagName}]-`;
-
-        const matchedTag = file.name.match(/^\[.*\]-/);
-        let fileName = file.name;
-        if (matchedTag) {
-            fileName = matchedTag[0] == tag ? fileName.slice(matchedTag[0].length) : `${tag}${fileName.slice(matchedTag[0].length)}`;
-        } else {
-            fileName = `${tag}${fileName}`;
-        }
-
-        const newPath = path.join(file.dir, fileName);
-
-        fs.renameSync(file.fullPath, newPath);
-
-        const newMediaFile = util.updateFile(newPath, file);
-        playlistFiles[fileIndex] = newMediaFile;
-
-        respond("Playlist", "playlist-change", { files: playlistFiles });
-    } catch (ex: any) {
-        dialogs.showErrorMessage(ex);
-    } finally {
-        if (fileIndex == currentIndex) {
-            loadMediaFile(currentTime);
-        }
-    }
-};
-
 const renameFile = async (e: Mp.RenameRequest) => {
     const currentTime = await releaseFile([e.data.id]);
 
@@ -924,8 +868,6 @@ const registerIpcChannels = () => {
     addEventHandler("request-cancel-convert", util.cancelConvert);
     addEventHandler("open-convert-sourcefile-dialog", openConvertSourceFileDialog);
     addEventHandler("shortcut", onShortcut);
-    addEventHandler("save-tags", saveTags);
-    addEventHandler("close-tag", closeTagEditor);
     addEventHandler("open-config-file", openConfigFileJson);
     addEventHandler("error", (e: Mp.ErrorEvent) => dialogs.showErrorMessage(e.message));
 };

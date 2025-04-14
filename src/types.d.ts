@@ -5,7 +5,7 @@ declare global {
         api: Api;
     }
 
-    type RendererName = "Player" | "Playlist" | "Convert" | "Tag";
+    type RendererName = "Player" | "Playlist" | "Convert";
     type Renderer = { [key in RendererName]: Electron.BrowserWindow | null };
 
     type MainChannelEventMap = {
@@ -36,8 +36,6 @@ declare global {
         "playlist-item-selection-change": Mp.PlaylistItemSelectionChange;
         "open-sort-context": Mp.Position;
         "media-state-change": Mp.MediaState;
-        "close-tag": Mp.Event;
-        "save-tags": Mp.SaveTagsEvent;
         "open-config-file": Mp.Event;
         error: Mp.ErrorEvent;
     };
@@ -66,7 +64,6 @@ declare global {
         "open-convert": Mp.OpenConvertDialogEvent;
         "after-convert": Mp.Event;
         "picture-in-picture": Mp.Event;
-        "open-tag-editor": Mp.OpenTagEditorEvent;
         "move-started": Mp.Event;
         "move-end": Mp.Event;
         "move-cancelled": Mp.Event;
@@ -109,8 +106,6 @@ declare global {
             Reveal: null;
             Metadata: null;
             Convert: null;
-            Tag: string;
-            ManageTags: null;
             Sort: Mp.SortOrder;
             Rename: null;
             Move: null;
@@ -180,7 +175,6 @@ declare global {
                 mode: "system" | Mp.Lang;
                 lang: Mp.Lang;
             };
-            tags: string[];
         };
 
         type MediaFile = {
@@ -350,14 +344,6 @@ declare global {
             error?: boolean;
         };
 
-        type OpenTagEditorEvent = {
-            tags: string[];
-        };
-
-        type SaveTagsEvent = {
-            tags: string[];
-        };
-
         type OpenConvertDialogEvent = {
             file: MediaFile;
             opener: DialogOpener;
@@ -449,8 +435,6 @@ declare global {
             cancel: string;
             close: string;
             mute: string;
-            tags: string;
-            manageTag: string;
             mediaFile: string;
         };
 

@@ -25,7 +25,6 @@ export default defineConfig({
                     player_window: "src/renderer/player/index.html",
                     playlist_window: "src/renderer/playlist/index.html",
                     convert_window: "src/renderer/convert/index.html",
-                    tag_window: "src/renderer/tag/index.html",
                 },
             },
         },

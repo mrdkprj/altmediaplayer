@@ -111,32 +111,6 @@ class Helper {
         return window;
     }
 
-    createTagEditorWindow(parent: BrowserWindow) {
-        const window = new BrowserWindow({
-            parent,
-            width: 400,
-            height: 600,
-            minHeight: 250,
-            resizable: true,
-            autoHideMenuBar: true,
-            show: false,
-            frame: false,
-            modal: false,
-            minimizable: false,
-            maximizable: false,
-            fullscreenable: false,
-            webPreferences: {
-                nodeIntegration: false,
-                contextIsolation: true,
-                preload: path.join(fileURLToPath(new URL("../preload/preload.js", import.meta.url))),
-            },
-        });
-
-        load(window, "Tag");
-
-        return window;
-    }
-
     async popup(name: Mp.ContextMenuName, x: number, y: number) {
         await this.menuBuilder.popup(this.menus[name], x, y);
     }
@@ -153,10 +127,6 @@ class Helper {
 
     createPlaylistContextMenu(name: Mp.ContextMenuName, window: BrowserWindow, onClick: Mp.PlaylistContextMenuCallback<keyof Mp.PlaylistContextMenuSubTypeMap>) {
         this.menus[name] = this.menuBuilder.createPlaylistContextMenu(window, onClick);
-    }
-
-    refreshTagContextMenu(tags: string[], onClick: Mp.PlaylistContextMenuCallback<"Tag">) {
-        this.menuBuilder.refreshTagContextMenu(this.menus["Playlist"], tags, onClick);
     }
 
     createPlaylistSortContextMenu(name: Mp.ContextMenuName, window: BrowserWindow, onClick: Mp.PlaylistContextMenuCallback<"Sort" | "GroupBy">) {

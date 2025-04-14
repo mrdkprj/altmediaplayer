@@ -132,15 +132,6 @@ class Util {
         files.push(...result);
     }
 
-    writeTag(file: Mp.MediaFile, tagName: string) {
-        const tag = `[${tagName}]-`;
-
-        if (file.name.startsWith(tag)) return;
-
-        const newName = path.join(file.dir, `${tag}${file.name}`);
-        fs.renameSync(file.fullPath, newName);
-    }
-
     async getMediaMetadata(fullPath: string): Promise<Mp.Metadata> {
         return new Promise((resolve, reject) => {
             ffmpeg.ffprobe(fullPath, async (error: any, FfprobeData: ffmpeg.FfprobeData) => {

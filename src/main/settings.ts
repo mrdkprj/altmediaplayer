@@ -29,7 +29,6 @@ const defaultSettings: Mp.Settings = {
         mode: "en",
         lang: "en",
     },
-    tags: [],
 };
 
 export default class Settings {
